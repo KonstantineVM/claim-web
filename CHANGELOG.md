@@ -41,3 +41,4 @@ When updating this file:
 - Cross-reference project-plan section numbers when relevant.
 - If you tried an approach that failed, describe *why* it failed — not just that it did. Future sessions read this and will repeat the failure without that context.
 - When a phase gate is hit (see `docs/PHASE_GATES.md`), add a phase-gate entry summarizing the gate criteria and how they were met.
+
