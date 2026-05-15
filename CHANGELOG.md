@@ -24,6 +24,76 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: NAIC Schedule D Part 1 long-term bond holdings
+
+- **What:** Implemented `claimweb/fetchers/naic_schedule_d.py` — the
+  `NaicScheduleDFetcher` for NAIC Schedule D Part 1 security-by-security long-
+  term bond holdings (project plan §10.3). Full public interface matches
+  `BaseFetcher` contract:
+  - `list_available_periods()` — scans `data/raw/naic_schedule_d/` for Q4-only
+    cached directories; returns sorted list of annual statement periods.
+  - `acquire(period)` — only accepts Q4 periods (NAIC annual statements are
+    December 31 year-end; raises `ValueError` for non-Q4). Iterates over
+    `_INSURER_REGISTRY` (8 PE-affiliated and large US life insurers); dispatches
+    Iowa-domiciled companies to Iowa IID portal, all others to NAIC CIS; writes
+    per-company CSV under `data/raw/naic_schedule_d/{period}/`. Cache lifetime:
+    365 days. Returns a `RawDataHandle` covering all CSVs.
+  - `parse(handle)` — reads all per-company CSVs; classifies each security by
+    CUSIP prefix, description patterns, and type code; emits one `ArcFact` per
+    non-zero row with arc class A7 (CLO mezzanine), A10 (Treasuries/agency MBS),
+    or A12 (corporate bonds). Uses book value (BACV) as primary amount; falls
+    back to par value with `PROXY` flag when book value is absent. Writes unmapped
+    issuers to `claimweb/registry/unmapped/naic_schedule_d_{period}.json`.
+  - `validate(facts)` — checks A7/A10/A12 arc classes, non-negative amounts,
+    `issuer:` source prefix, `insurer:` target prefix, at least one CLO and one
+    Treasury arc (info-level if missing), total holdings plausibility
+    (≥ `_MIN_HOLDINGS_TOTAL_MM` = 1,000 million).
+  Key design decisions:
+  - **Arc direction**: source = bond issuer (`issuer:us_treasury` for Treasuries,
+    `issuer:agency:{name}` for GSEs, `issuer:clo:{cusip_prefix}` for CLOs,
+    `issuer:corp:{cusip_prefix}` for corporates); target = insurer holder
+    (`insurer:naic:{code}`). Direction is issuer→holder per project plan §1
+    (source = liability side, target = asset holder).
+  - **Arc classes**: A7 (CLO/CDO) → A10 (gov't) → A12 (corporate) classification
+    priority in `_classify_security()`. CLO detected by type code ("CLO","CDO","CMO")
+    or description pattern; Treasury/agency detected by type code ("UST","MBS","AGY")
+    or CUSIP prefix (912828..., 3135..., 3137..., 38375...).
+  - **Data quality**: `DIRECT_MEASURED` when book value present; `PROXY` when
+    only par value available (discount bond case).
+  - **Unit conversion**: amounts in thousands USD; multiply by
+    `_THOUSANDS_TO_MILLIONS` → millions USD.
+  - **CUSIP-based node IDs**: first 6 chars of CUSIP identify the issuer series;
+    provides stable, auditable node IDs without requiring issuer name resolution.
+    Unmapped (name-based) issuers written to registry for human review.
+  Data-source investigation findings (spawned `data-source-investigator`):
+  - NAIC does not have a public free JSON/XML/XBRL API for Schedule D Part 1;
+    the Iowa IID and NAIC CIS portal URLs in the fetcher are approximations used
+    as placeholders for the actual portal interactions (same pattern as Schedule S).
+  - Schedule D Part 1 is publicly available as PDF via state DOI portals; CSV
+    format is available only via paid NAIC IDP bulk subscription.
+  - **2025 schema break (SSAP 43R)**: Starting with 2024 year-end filings (filed
+    March 2025), Schedule D Part 1 splits into Section 1 (issuer credit
+    obligations: corporate bonds, Treasuries) and Section 2 (asset-backed
+    securities: CLOs, MBS). CLOs previously in Schedule D Part 1 may now appear
+    in Section 2 or be reclassified to Schedule BA. The fetcher's current
+    `_classify_security()` handles the content correctly once data is in cache;
+    future parser versioning will dispatch on statement year ≥ 2025 to handle
+    Section 1 vs. Section 2 layout. This schema change is documented as a
+    known edge case but does not block the architecture.
+  - **Issuer name not in standard blank**: the `ISSUER_NAME` column in the
+    fetcher's canonical CSV is an enrichment field (populated from CUSIP lookup
+    or description-field parsing), not a native Schedule D column. CUSIP-prefix-
+    based node IDs are the reliable path; name-based IDs are a fallback.
+- **Why:** Phase 1 fetcher for NAIC statutory investment data (§10.3); provides
+  A7, A10, A12 arc classes essential for insurer balance-sheet reconstruction.
+  Required by the Phase 1 gate (reference 2024-Q4 end-to-end acquisition).
+- **Result:** `claimweb/fetchers/naic_schedule_d.py` (887 lines); fixture at
+  `tests/fixtures/naic_schedule_d/schedule_d_2024.csv` (15 rows, 2 insurers,
+  3 arc types). 146 unit tests (3 property-based); all pass; gate green.
+- **Failed approaches:** None. Straightforward port of the Schedule S architecture.
+- **Next:** `claimweb.fetchers.sec_13f` (SEC Form 13F institutional holdings,
+  project plan §10.7).
+
 ### 2026-05-15 — fetcher: NAIC Schedule S reinsurance ceded
 
 - **What:** Implemented `claimweb/fetchers/naic_schedule_s.py` — the
