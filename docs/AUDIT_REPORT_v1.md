@@ -1102,3 +1102,30 @@ Both NOMINAL items become CLOSED as a side effect of completing G1.09 and Stage 
 - **Hard deadline**: Iowa RIU portal sunsets June 30, 2026 — 6 weeks from audit start. Stage 3 of remediation must execute by then or accept a Schedule S scope reduction.
 
 ---
+
+## Phase 10 — Remediation Plan
+
+The remediation plan is in a separate file: `docs/AUDIT_REMEDIATION_PLAN_v1.md`.
+
+The plan is organized in 10 stages:
+
+1. **Stage 1 — Documentation Reconciliation** (1 day, immediate)
+2. **Stage 2 — Subagent Reliability Improvements** (1-2 days)
+3. **Stage 3 — F1 Remediation + NAIC Placeholder-URL Replacement** (5-7 days; **must complete before June 30, 2026** for Iowa IID access)
+4. **Stage 4 — Live-Data Validation for Unverified Fetchers** (3-4 days)
+5. **Stage 5 — Conservation-Law Compile Robustness** (1-2 days)
+6. **Stage 6 — Reference Quarter 2024-Q4 End-to-End** (2-3 days)
+7. **Stage 7 — Reconstruction Implementation** (5-7 days)
+8. **Stage 8 — Sankey Visualization** (1-2 days)
+9. **Stage 9 — Methodology Paper Outline** (1-2 days; can run in parallel)
+10. **Stage 10 — Phase 1 Closure Ceremony** (1 day)
+
+**Total critical-path effort: ~21-30 days** (4-6 weeks of focused operator time).
+
+**Binding constraint:** Iowa RIU portal sunsets June 30, 2026 — 6 weeks from audit-start. Stage 3 must execute by then or scope-reduce Schedule S.
+
+Each stage in the plan has explicit step lists with file paths, actions, and verification criteria. The plan also names out-of-scope work (cascade simulation, historical reconstruction, ABM layer, paid NAIC IDP subscription) so the remediation does not creep beyond Phase 1.
+
+See `docs/AUDIT_REMEDIATION_PLAN_v1.md` for full detail.
+
+---
