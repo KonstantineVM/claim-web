@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edgarSubmission xmlns="http://www.sec.gov/edgar/nmfp">
+  <formData>
+    <genInfo>
+      <seriesName>Test Prime Money Market Fund</seriesName>
+      <seriesId>S000099999</seriesId>
+      <cik>0000999999</cik>
+      <lei>549300TESTLEIFUND00001</lei>
+      <repPeriodDate>2024-12-31</repPeriodDate>
+      <isNMFP1>N</isNMFP1>
+      <fundCategory>Prime</fundCategory>
+      <totalNetAssets>5000000000</totalNetAssets>
+      <netAssets7Day>4990000000</netAssets7Day>
+    </genInfo>
+    <invstOrSec>
+      <name>MetLife Funding LLC</name>
+      <lei>549300TESTSPVLEIMETLIF</lei>
+      <title>FABN Medium-Term Note</title>
+      <identifiers>
+        <cusip>59156RAB5</cusip>
+      </identifiers>
+      <category>Other Note</category>
+      <maturityDate>2025-06-15</maturityDate>
+      <finalMaturityDate>2025-06-15</finalMaturityDate>
+      <isConditionallyDemandable>N</isConditionallyDemandable>
+      <isDemandFeature>N</isDemandFeature>
+      <guarantorOrEnhancer>None</guarantorOrEnhancer>
+      <amortizedCostAmt>100000000</amortizedCostAmt>
+      <percentageOfMoneyMarketFundNetAssets>2.00</percentageOfMoneyMarketFundNetAssets>
+    </invstOrSec>
+    <invstOrSec>
+      <name>Prudential Funding LLC</name>
+      <lei>549300TESTSPVLEIPRUDNT</lei>
+      <title>FABN Extendible Note</title>
+      <identifiers>
+        <cusip>74432VAB3</cusip>
+      </identifiers>
+      <category>Other Note</category>
+      <maturityDate>2025-03-15</maturityDate>
+      <finalMaturityDate>2026-03-15</finalMaturityDate>
+      <isConditionallyDemandable>Y</isConditionallyDemandable>
+      <isDemandFeature>Y</isDemandFeature>
+      <guarantorOrEnhancer>None</guarantorOrEnhancer>
+      <amortizedCostAmt>50000000</amortizedCostAmt>
+      <percentageOfMoneyMarketFundNetAssets>1.00</percentageOfMoneyMarketFundNetAssets>
+    </invstOrSec>
+    <invstOrSec>
+      <name>US Treasury Bond 1.50% 2025</name>
+      <identifiers>
+        <cusip>912828YK0</cusip>
+      </identifiers>
+      <category>US Treasury Debt</category>
+      <maturityDate>2025-01-15</maturityDate>
+      <finalMaturityDate>2025-01-15</finalMaturityDate>
+      <isConditionallyDemandable>N</isConditionallyDemandable>
+      <isDemandFeature>N</isDemandFeature>
+      <amortizedCostAmt>200000000</amortizedCostAmt>
+      <percentageOfMoneyMarketFundNetAssets>4.00</percentageOfMoneyMarketFundNetAssets>
+    </invstOrSec>
+    <invstOrSec>
+      <name>Lincoln National Funding LLC</name>
+      <identifiers>
+        <cusip>534187AA1</cusip>
+      </identifiers>
+      <category>Other Instrument</category>
+      <maturityDate>2025-09-30</maturityDate>
+      <finalMaturityDate>2025-09-30</finalMaturityDate>
+      <isConditionallyDemandable>N</isConditionallyDemandable>
+      <isDemandFeature>N</isDemandFeature>
+      <amortizedCostAmt>75000000</amortizedCostAmt>
+      <percentageOfMoneyMarketFundNetAssets>1.50</percentageOfMoneyMarketFundNetAssets>
+    </invstOrSec>
+    <invstOrSec>
+      <name>No-CUSIP Funding SPV</name>
+      <identifiers>
+      </identifiers>
+      <category>Other Note</category>
+      <maturityDate>2025-04-01</maturityDate>
+      <finalMaturityDate>2025-04-01</finalMaturityDate>
+      <isConditionallyDemandable>N</isConditionallyDemandable>
+      <isDemandFeature>N</isDemandFeature>
+      <amortizedCostAmt>25000000</amortizedCostAmt>
+      <percentageOfMoneyMarketFundNetAssets>0.50</percentageOfMoneyMarketFundNetAssets>
+    </invstOrSec>
+  </formData>
+</edgarSubmission>
