@@ -1,0 +1,182 @@
+{
+  "cik": "0001099219",
+  "entityName": "MetLife, Inc.",
+  "facts": {
+    "us-gaap": {
+      "Assets": {
+        "label": "Assets",
+        "description": "Sum of the carrying amounts as of the balance sheet date of all assets.",
+        "units": {
+          "USD": [
+            {
+              "end": "2024-09-30",
+              "val": 726853000000,
+              "accn": "0001099219-24-000056",
+              "fy": 2024,
+              "fp": "Q3",
+              "form": "10-Q",
+              "filed": "2024-11-06",
+              "frame": "CY2024Q3I"
+            },
+            {
+              "end": "2024-12-31",
+              "val": 734000000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14",
+              "frame": "CY2024I"
+            },
+            {
+              "end": "2024-12-31",
+              "val": 734100000000,
+              "accn": "0001099219-25-000013",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K/A",
+              "filed": "2025-03-01"
+            }
+          ]
+        }
+      },
+      "Liabilities": {
+        "label": "Liabilities",
+        "description": "Sum of the carrying amounts as of the balance sheet date of all liabilities.",
+        "units": {
+          "USD": [
+            {
+              "end": "2024-09-30",
+              "val": 678000000000,
+              "accn": "0001099219-24-000056",
+              "fy": 2024,
+              "fp": "Q3",
+              "form": "10-Q",
+              "filed": "2024-11-06",
+              "frame": "CY2024Q3I"
+            },
+            {
+              "end": "2024-12-31",
+              "val": 685000000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14",
+              "frame": "CY2024I"
+            }
+          ]
+        }
+      },
+      "StockholdersEquity": {
+        "label": "Stockholders' Equity Attributable to Parent",
+        "description": "Total of all stockholders' equity attributable to the parent.",
+        "units": {
+          "USD": [
+            {
+              "end": "2024-12-31",
+              "val": 49000000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14",
+              "frame": "CY2024I"
+            }
+          ]
+        }
+      },
+      "AdvancesFromFederalHomeLoanBanks": {
+        "label": "Advances from Federal Home Loan Banks",
+        "description": "Amount of borrowings from Federal Home Loan Bank.",
+        "units": {
+          "USD": [
+            {
+              "end": "2024-09-30",
+              "val": 9500000000,
+              "accn": "0001099219-24-000056",
+              "fy": 2024,
+              "fp": "Q3",
+              "form": "10-Q",
+              "filed": "2024-11-06",
+              "frame": "CY2024Q3I"
+            },
+            {
+              "end": "2024-12-31",
+              "val": 10000000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14",
+              "frame": "CY2024I"
+            }
+          ]
+        }
+      },
+      "SecuritiesSoldUnderAgreementsToRepurchase": {
+        "label": "Securities Sold under Agreements to Repurchase",
+        "description": "The carrying value as of the balance sheet date of securities sold under agreements to repurchase.",
+        "units": {
+          "USD": [
+            {
+              "end": "2024-12-31",
+              "val": 3200000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14",
+              "frame": "CY2024I"
+            }
+          ]
+        }
+      },
+      "PolicyholderAccountBalance": {
+        "label": "Policyholder Account Balance",
+        "description": "Amount of policyholder account balance.",
+        "units": {
+          "USD": [
+            {
+              "end": "2024-12-31",
+              "val": 180000000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14",
+              "frame": "CY2024I"
+            },
+            {
+              "end": "2024-12-31",
+              "val": 45000000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14"
+            }
+          ]
+        }
+      },
+      "PayablesForCollateralUnderSecuritiesLoanedAndOtherTransactions": {
+        "label": "Payables for Collateral under Securities Loaned and Other Transactions",
+        "description": "Amount of payables for collateral received under securities loaned transactions.",
+        "units": {
+          "USD": [
+            {
+              "end": "2024-12-31",
+              "val": 8500000000,
+              "accn": "0001099219-25-000012",
+              "fy": 2024,
+              "fp": "FY",
+              "form": "10-K",
+              "filed": "2025-02-14",
+              "frame": "CY2024I"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
