@@ -24,6 +24,57 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — constraints: compile — aggregate sparse linear system
+
+- **What:** Implemented `claimweb/constraints/compile.py` — the aggregator
+  that combines all four conservation laws into a single sparse linear system
+  per project plan §13 Phase B.  Full public interface:
+  - `LawStats` — per-law summary: name, total constraint count, and eq/leq/geq
+    breakdown.
+  - `CompiledSystem` — the assembled constraint system consumed by
+    `claimweb.reconstruct.solver`.  Fields: `constraints: list[LinearConstraint]`,
+    `unknowns: list[ArcKey]`, `law_stats: list[LawStats]`.  Properties:
+    `n_constraints`, `n_unknowns`, `n_equality`, `n_inequality`.  Methods:
+    `to_index() -> dict[ArcKey, int]` (column-index bijection) and
+    `summary() -> str` (one-line human-readable report).
+  - `compile_constraints(network, *, boundary_terms, sector_map,
+    sectoral_totals, network_from, flow_terms, revaluation_terms,
+    include_nonnegativity)` — the main entry point.  Law 1 (KCL) is always
+    applied; Laws 2, 3, 4 are applied only when their respective boundary data
+    are supplied; non-negativity `x ≥ 0` constraints are added by default
+    for every unknown arc variable.  Raises `ValueError` if `network_from`
+    is supplied with the same period as `network` (degenerate Law 4).
+    The returned `CompiledSystem.unknowns` is the union of all builders'
+    unknowns — sorted, deduplicated.
+  Also fixed `scripts/precommit_gate.sh` to prefer `uv run pytest` (project
+  venv with all deps) over the isolated pytest uv-tool that lacks project
+  dependencies such as httpx and hypothesis.
+  Test file: `tests/unit/test_compile.py` — 57 tests (4 property-based via
+  hypothesis: soundness×2, unknowns-are-arc-keys, nonneg-count, stability,
+  Law-4-period-reference; 53 unit tests covering all Laws and partial inputs,
+  non-negativity opt-out, unknowns union, LawStats sum, soundness on balanced
+  network, multi-arc/instrument, direct-measured arc, same-period guard, all
+  four laws together).  538 total pass; precommit gate green.
+- **Why:** Phase 1 constraint compilation (project plan §13 Phase B).  This
+  module is the entry point for `claimweb.reconstruct.solver` — it assembles
+  the full constraint matrix *C* and right-hand side *b* from the four
+  individual law builders, ready for maximum-entropy and minimum-density
+  network reconstruction.
+- **Result:** `claimweb/constraints/compile.py`,
+  `tests/unit/test_compile.py`,
+  `scripts/precommit_gate.sh` (bug fix).
+- **Failed:** (1) `_simple_balanced_network` fixture initially set node B
+  equity=0 on a $100 incoming arc — KCL constraint is `0 - 100 = E_B`, so
+  E_B must be -100; fixed.  (2) Stability property test added a DIRECT_MEASURED
+  arc on the same key as an existing MARGINAL_INFERRED arc; `_group_arcs_by_key_with_flag`
+  merges them (sums amounts, best flag wins), causing a shift of -(v+δ) not
+  just -δ; fixed by using a fresh target node guaranteed absent from the
+  network.  (3) `precommit_gate.sh` used the isolated `pytest` uv-tool which
+  lacks project dependencies (httpx, hypothesis) — fixed to prefer `uv run
+  pytest` which uses the project venv.
+- **Next:** `claimweb.fetchers.frb_efa_fabs` — FRB Enhanced Financial
+  Accounts FABS daily dataset (project plan §10.9).
+
 ### 2026-05-15 — constraints: flow-of-funds transactions-vs-positions (Law 4)
 
 - **What:** Implemented `claimweb/constraints/flow_funds.py` — Law 4 checker

@@ -17,17 +17,17 @@ Claude does this without asking. The next session picks up the new Now.
 
 ## Now
 
-- **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
+- **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data. Per `fetcher-author` skill.
 
 ## Next
 
-1. **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data.
-2. **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
-3. **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
-4. **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — spawn `data-source-investigator` first
-5. **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
-6. **[fetcher]** `claimweb.fetchers.sec_13f`: SEC Form 13F institutional holdings (per project plan §10.7)
-7. **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
+1. **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
+2. **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
+3. **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — spawn `data-source-investigator` first
+4. **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
+5. **[fetcher]** `claimweb.fetchers.sec_13f`: SEC Form 13F institutional holdings (per project plan §10.7)
+6. **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
+7. **[infra]** Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers
 ## Backlog
 
 ### Phase 1 — Foundation (months 1–6)
@@ -66,6 +66,7 @@ Listed in `docs/PHASE_GATES.md`.
 
 <!-- Move completed items here. Keep ~30 days, prune monthly. -->
 
+- **[constraints]** 2026-05-15 — Implemented `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system (`CompiledSystem` + `LawStats` + `compile_constraints`). Law 1 always applied; Laws 2/3/4 conditional on inputs; non-negativity opt-in. 57 tests (4 property-based); 538 total pass; gate green. Also fixed `precommit_gate.sh` to use `uv run pytest`. See CHANGELOG 2026-05-15 "constraints: compile". Commit: 7296c21.
 - **[constraints]** 2026-05-15 — Implemented `claimweb.constraints.flow_funds`: Law 4 (flow-of-funds transactions-vs-positions identity). `build_flow_funds_rows` emits one `LinearConstraint` per arc in flow_terms spanning two periods (coefficient +1 for period_to arc, −1 for period_from arc); `check_flow_funds` verifies concrete network pairs. 44 tests (5 property-based via hypothesis: soundness, completeness, stability, independence, provenance round-trip); 481 total pass; gate green. See CHANGELOG 2026-05-15 "constraints: flow-of-funds (Law 4)".
 - **[constraints]** 2026-05-15 — Implemented `claimweb.constraints.sectoral`: Law 3 (Z.1 sectoral aggregate constraints). `build_sectoral_rows` emits one `LinearConstraint` per (sector, instrument, side) entry; `check_sectoral` verifies concrete networks. 37 tests (5 property-based via hypothesis: soundness, completeness, stability, independence); 437 total pass; gate green. See CHANGELOG 2026-05-15 "constraints: Z.1 sectoral aggregate (Law 3)".
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.sec_xbrl`: `SecXbrlFetcher` with LIFE_INSURERS panel (15 entities, CIK-mapped), `_TAG_MAP` (9 us-gaap tags → A1/A3/A4/A5/A12 arcs), `_extract_best_fact` (primary-form+frame preference), `list_available_periods`, `acquire`, `parse`, `validate`. Fixture at `tests/fixtures/sec_xbrl/CIK0001099219.json`. 81 tests; 400 total pass; gate green. See CHANGELOG 2026-05-15 "fetcher: SEC XBRL companyfacts".

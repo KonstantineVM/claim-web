@@ -33,16 +33,32 @@ yellow() { printf "\033[33m%s\033[0m\n" "$1"; }
 section() { printf "\n=== %s ===\n" "$1"; }
 
 # 1. pytest, fast tests first.
+# Prefer uv run (project venv) → .venv/bin/pytest → system pytest.
 section "pytest (unit + smoke)"
-if command -v pytest >/dev/null 2>&1 && [ -d tests/ ]; then
-    if pytest tests/ -x -q --ignore=tests/validation -m "not integration" 2>&1 | tail -40; then
-        green "pytest unit/smoke: PASS"
+if [ -d tests/ ]; then
+    if command -v uv >/dev/null 2>&1; then
+        PYTEST_CMD="uv run pytest"
+    elif [ -x ".venv/bin/pytest" ]; then
+        PYTEST_CMD=".venv/bin/pytest"
+    elif command -v pytest >/dev/null 2>&1; then
+        PYTEST_CMD="pytest"
     else
-        red "pytest unit/smoke: FAIL — fatal"
-        fatal=$((fatal + 1))
+        PYTEST_CMD=""
+    fi
+
+    if [ -n "$PYTEST_CMD" ]; then
+        if $PYTEST_CMD tests/ -x -q --ignore=tests/validation -m "not integration" 2>&1 | tail -40; then
+            green "pytest unit/smoke: PASS"
+        else
+            red "pytest unit/smoke: FAIL — fatal"
+            fatal=$((fatal + 1))
+        fi
+    else
+        yellow "pytest not available — skipping (warning)"
+        warning=$((warning + 1))
     fi
 else
-    yellow "pytest not available or no tests/ — skipping (warning)"
+    yellow "no tests/ directory — skipping (warning)"
     warning=$((warning + 1))
 fi
 
