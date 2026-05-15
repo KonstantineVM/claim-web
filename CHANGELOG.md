@@ -24,6 +24,58 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: SEC Form 13F institutional holdings (A11/A12 arcs)
+
+- **What:** Implemented `claimweb/fetchers/sec_13f.py` — the `Sec13fFetcher` for
+  SEC Form 13F-HR institutional investment manager holdings (project plan §10.7).
+  Full public interface matches `BaseFetcher` contract:
+  - `list_available_periods()` — scans `data/raw/sec_13f/` for cached quarter
+    directories; returns sorted list of periods.
+  - `acquire(period)` — for each CIK in `_MANAGER_REGISTRY` (7 PE-affiliated AAMs:
+    Apollo, Blackstone, KKR, Brookfield, Carlyle, BlackRock, Ares), fetches the
+    EDGAR submissions JSON (`data.sec.gov/submissions/CIK{cik10}.json`), finds
+    the 13F-HR filing within the 50-day post-quarter-end window, downloads the
+    informationTable XML, and caches it at `data/raw/sec_13f/{period}/{cik10}.xml`.
+    Cache lifetime 90 days; per-period `_manifest.json` guards re-downloads.
+  - `parse(handle)` — reads all cached XMLs; parses `<infoTable>` rows; emits A11
+    arcs for equity holdings (`sshPrnamtType == "SH"`) and A12 arcs for debt
+    principal holdings (`sshPrnamtType == "PRN"`); skips put/call options, zero-
+    value rows, and rows with no identifier. Writes unmapped issuers (no CUSIP)
+    to `claimweb/registry/unmapped/sec_13f_{period}.json`.
+  - `validate(facts)` — checks A11/A12 arc classes, non-negative amounts,
+    `corp:` source prefix, `aam:cik:` target prefix, and total holdings
+    plausibility (≥ `_MIN_TOTAL_HOLDINGS_MM` = $1,000M).
+  Key design decisions:
+  - **Arc direction**: source = security issuer (`corp:cusip:{cusip6}` using first
+    6 chars of CUSIP as issuer series ID; `corp:name:{slug}` as fallback);
+    target = AAM manager holder (`aam:cik:{cik10}`). Direction is issuer→holder
+    per project plan §1.
+  - **Arc classes**: A11 for equity/shares (`sshPrnamtType == "SH"`) and A12 for
+    debt principal (`sshPrnamtType == "PRN"`). Options (putCall non-empty) are
+    excluded as derivative positions, not direct financial claims.
+  - **Value conversion**: 13F `<value>` field is in thousands of USD; parser
+    multiplies by `Decimal("0.001")` → millions USD.
+  - **Data quality**: `DIRECT_MEASURED` — direct SEC regulatory filing disclosure.
+  - **Filing window**: 50 calendar days after quarter-end (45-day statutory
+    deadline + 5-day grace). Only `13F-HR` form type is accepted; `13F-HR/A`
+    amendments are skipped (first filing is the authoritative snapshot).
+  - **Manager registry**: `_MANAGER_REGISTRY` keyed by EDGAR CIK for the parent
+    company of each target AAM. Subsidiaries may also file; those are not fetched
+    here and should be added as the project registry expands.
+  Data-source investigation (spawned `data-source-investigator`): EDGAR was
+  not reachable from the sandbox environment; the agent confirmed the approach
+  based on documentation research. The EDGAR submissions API (`data.sec.gov`)
+  and informationTable XML schema are stable and well-documented.
+- **Why:** Phase 1 fetcher for SEC Form 13F institutional cross-holdings (§10.7);
+  provides A11/A12 arcs for intra-AAM-cluster public security cross-holdings.
+  Required by the Phase 1 gate (reference 2024-Q4 end-to-end acquisition).
+- **Result:** `claimweb/fetchers/sec_13f.py` (≈400 lines); fixtures at
+  `tests/fixtures/sec_13f/` (informationTable XML + submissions JSON). 114 unit
+  tests (3 property-based); all pass; 1260 total pass; gate green.
+- **Failed approaches:** None.
+- **Next:** `claimweb.reconstruct.max_entropy` (per project plan §13 Phase C;
+  spawn `literature-checker` against Upper 2004 before writing code).
+
 ### 2026-05-15 — fetcher: NAIC Schedule D Part 1 long-term bond holdings
 
 - **What:** Implemented `claimweb/fetchers/naic_schedule_d.py` — the

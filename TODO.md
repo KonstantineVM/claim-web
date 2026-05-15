@@ -17,17 +17,17 @@ Claude does this without asking. The next session picks up the new Now.
 
 ## Now
 
-- **[fetcher]** `claimweb.fetchers.sec_13f`: SEC Form 13F institutional holdings (per project plan §10.7) — spawn `data-source-investigator` first. Per `fetcher-author` skill.
+- **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
 
 ## Next
 
-1. **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
-2. **[infra]** Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers
-3. **[reconstruction]** `claimweb.reconstruct.min_density`: per project plan §13 Phase C; spawn `literature-checker` against Anand-Craig-von Peter (2015)
-4. **[reconstruction]** `claimweb.reconstruct.solver`: the harness that runs both methods and brackets per project plan §13
-5. **[visualize]** Initial Sankey visualization for 2024-Q4 — per `visualization-author` skill
-6. **[infra]** 2024-Q4 reconstructed via both methods; output in `data/output/network/2024-Q4/v1/`
-7. **[docs]** Phase 1 sections of methodology paper drafted in `docs/METHODOLOGY.md`
+1. **[infra]** Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers
+2. **[reconstruction]** `claimweb.reconstruct.min_density`: per project plan §13 Phase C; spawn `literature-checker` against Anand-Craig-von Peter (2015)
+3. **[reconstruction]** `claimweb.reconstruct.solver`: the harness that runs both methods and brackets per project plan §13
+4. **[visualize]** Initial Sankey visualization for 2024-Q4 — per `visualization-author` skill
+5. **[infra]** 2024-Q4 reconstructed via both methods; output in `data/output/network/2024-Q4/v1/`
+6. **[docs]** Phase 1 sections of methodology paper drafted in `docs/METHODOLOGY.md`
+7. **[phase-gate]** Close Phase 1 — use `phase-gate-closer` skill; this is a user-confirmation event
 ## Backlog
 
 ### Phase 1 — Foundation (months 1–6)
@@ -66,6 +66,7 @@ Listed in `docs/PHASE_GATES.md`.
 
 <!-- Move completed items here. Keep ~30 days, prune monthly. -->
 
+- **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.sec_13f`: `Sec13fFetcher` for SEC Form 13F-HR institutional holdings. Downloads informationTable XMLs per CIK from EDGAR for 7 PE-affiliated AAMs; emits A11 arcs (equity/SH) and A12 arcs (bond principal/PRN); skips put/call options; source = `corp:cusip:{cusip6}`, target = `aam:cik:{cik10}`. 114 unit tests (3 property-based); gate green. See CHANGELOG 2026-05-15 "fetcher: SEC Form 13F". Commit: TBD.
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.naic_schedule_d`: `NaicScheduleDFetcher` for NAIC Schedule D Part 1 long-term bond holdings. Classifies securities into A7 (CLO mezzanine), A10 (Treasuries/agency MBS), A12 (corporate bonds) via CUSIP prefix + description patterns + type codes. Arc direction: issuer→insurer holder. Uses book value (BACV) as primary amount; par value as PROXY fallback. 146 unit tests (3 property-based); gate green. Data-source investigation spawned: acquisition URLs are approximations (no free public API); 2025 SSAP 43R schema break documented. See CHANGELOG 2026-05-15 "fetcher: NAIC Schedule D Part 1". Commit: c8a3c14.
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.naic_schedule_s`: `NaicScheduleSFetcher` for NAIC Schedule S reinsurance ceded (Parts 2 and 4). Acquires per-company CSVs from Iowa IID (IA-domiciled) and NAIC CIS (others); emits A6 arcs (cedent insurer → offshore/domestic reinsurer). `_OFFSHORE_DOMICILES` uses 3-letter ISO codes for CA/KY/DE conflicts with US state codes. 123 tests (3 property-based); all pass; gate green. See CHANGELOG 2026-05-15 "fetcher: NAIC Schedule S reinsurance ceded". Commit: 300265a.
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.sec_adv`: `SecAdvFetcher` for SEC Form ADV investment adviser registrations. Downloads IAPD bulk CSV (ia_firm.csv + ia_schedule_r.csv), parses Schedule R to emit A11 ownership/affiliation arcs for G3 graph (AAM→insurer, AAM→IA, AAM→fund, etc.). Skips service-provider relationships; uses parent RAUM as PROXY arc amount. 96 tests (3 property-based); 877 total pass; gate green. See CHANGELOG 2026-05-15 "fetcher: SEC Form ADV". Commit: 8486b14.

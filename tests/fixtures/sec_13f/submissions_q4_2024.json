@@ -1,0 +1,28 @@
+{
+  "cik": "1357615",
+  "name": "Apollo Global Management Inc",
+  "filings": {
+    "recent": {
+      "accessionNumber": [
+        "0001357615-25-000001",
+        "0001357615-24-000888",
+        "0001357615-24-000100"
+      ],
+      "form": [
+        "13F-HR",
+        "10-K",
+        "13F-HR/A"
+      ],
+      "filingDate": [
+        "2025-02-14",
+        "2025-01-15",
+        "2024-11-14"
+      ],
+      "primaryDocument": [
+        "form13fInfoTable.xml",
+        "apollo-20241231.htm",
+        "form13fInfoTable.xml"
+      ]
+    }
+  }
+}
