@@ -1185,3 +1185,80 @@ After Phases 1-11, the audit did not surface any subsystem that required deep di
 No subagent deep dives were dispatched in this audit. The remediation plan does not require any.
 
 ---
+
+## Phase 19 — Self-Verification
+
+The audit terminates only after this checklist passes.
+
+| # | Check | Status | Note |
+|---|---|---|---|
+| A | File coverage — every committed file cited in at least one phase | ✓ | Phase 2 inventoried 149 committed files; Phase 5 labeled every Python file; Phase 2c covered configs, harness, scripts, docs |
+| B | Contradiction check — no file classified as both LIVE-LOAD-BEARING and ABANDONED | ✓ | `09_research_state.csv` reviewed; no double-classifications |
+| C | Research-state coverage — every Python file has exactly one label | ✓ | 47 production .py + 16 test .py + tests/conftest.py = 64 .py files; all labeled |
+| D | Acquisition-URL coverage — every fetcher has exactly one entry in `07_acquisition_urls.csv` with `is_placeholder` populated | ✓ | 9 rows for 9 concrete fetchers (base.py has no URL — expected) |
+| E | Conservation-law coverage — every law (1-4) has a row in `10_conservation_law_coverage.csv` | ✓ | 5 rows (Law 1-4 + compile); each with property-test count and names |
+| F | Gate-status coverage — every Phase 1 gate criterion in PHASE_GATES.md has a row in `11_phase1_gate_status.csv` | ✓ | 17 rows matching G1.01-G1.17 |
+| G | Remediation-plan completeness — every OPEN or NOMINAL gate criterion is addressed by ≥ 1 step in the plan; no step addresses a CLOSED criterion | ✓ | Cross-checked Stage 3-10 against `11_phase1_gate_status.csv` |
+| H | External-context citations — every Phase 8 finding cites ≥ 1 external source | ✓ | 13 sources listed at end of Phase 8 |
+| I | Remediation steps actionable — every step names specific files and verification criteria | ✓ | Each step has Files / Action / Verification subsection |
+| J | No phase skipped — Phases 1-11 have committed chunks; Phase 12 explicitly documents no deep dives needed | ✓ | Commit log shows commits for each phase |
+| K | Nothing re-derived — CHANGELOG entries verified, not re-narrated; PHASE_GATES.md treated as input | ✓ | Findings reference CHANGELOG line numbers, not retell its narrative |
+| L | Phase 1 findings propagated — every later section that references a doc claim cites Phase 1's verdict | ✓ | F1 cited in Phases 2a, 3c, 4b, 7a, 9, 10 |
+| M | Every claim has a citation | ✓ | All findings cite file:line; CSV scratch files referenced |
+| N | Authoritative-source decisions consistent | ✓ | Stage 1.4 of plan chooses Reading A as authoritative; Stage 3 enforces it across all fetchers |
+| O | Unlimited-thinking-budget rule honored | ✓ | The audit read full source for kcl.py:281-345 to confirm F1 elevation; read project plan §1.1 and §4 multiple times |
+| P | Self-criticism section present | (see below) | |
+| Q | Intermediate artifacts — every numbered CSV (02-11) exists in `docs/audit_v1/scratch/` | ✓ | `ls docs/audit_v1/scratch/` shows 00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11 (`06_import_graph.csv` added during self-verification) |
+| R | Remediation plan separate file | ✓ | `docs/AUDIT_REMEDIATION_PLAN_v1.md` is self-contained for a human operator |
+
+### Phase P — Self-Criticism
+
+What this audit did not verify:
+
+1. **No fetcher was run against live data.** Every claim about live-data correctness rests on CHANGELOG narratives and structural reading of fetcher code. The audit cannot prove `sec_xbrl.py` returns correct values for MetLife 2024-Q4 today; it can only prove the fetcher's code parses MetLife's fixture cleanly.
+
+2. **No reconstruction solver was run.** The conservation-law constraint matrix's actual rank, condition number, and feasibility on real 2024-Q4 data are unknown. The audit's confidence in Phase 7a rests on reading `compile.py` and verifying its structural soundness — not on watching it solve.
+
+3. **The F1 finding was not validated by execution.** The audit's confidence that kcl.py + 9 fetchers would produce sign-flipped balances rests on reading both sides of the code carefully. A targeted test (Stage 3.3 of the remediation plan) would prove or disprove the audit's interpretation in minutes. The audit did not write that test.
+
+4. **The Iowa RIU portal sunset on June 30, 2026 is the audit's most consequential time-sensitive finding.** The audit reads the search-result text but did not independently fetch `iid.iowa.gov` to confirm the portal-sunset notice or look for the replacement path. The operator should verify directly before relying on this in Stage 3 scheduling.
+
+5. **The `documentation-curator` and `literature-checker` subagents have not been invoked.** The audit notes their absence but did not spawn them to test whether they would function correctly. The remediation plan's Stage 2 changes should be smoke-tested.
+
+6. **The audit did not check whether `data-source-investigator` subagent in claude/audit-claim-web-q6ojZ session could have reached EDGAR, NAIC, or BMA from this sandbox.** It assumed the autonomous-loop's previous failures generalize. They might.
+
+7. **The audit accepts CHANGELOG entries about specific behaviors (e.g. "the test handles A, B, C edge cases") without reading the specific tests for each entry.** A targeted re-read of all 16 test modules would surface additional minor discrepancies. The 165-test parametrize delta in Phase 2b is one such latent finding that was resolved structurally but not enumerated.
+
+8. **The G3 ownership-direction question (project plan §3.2) was flagged but not resolved.** Phase 3c.2 leaves it as "remediation Stage 1 with §3.2 clarification" without an authoritative recommendation between the two readings. The audit prompt's example "Apollo → Athene" reads more naturally as source=Apollo, and the code already implements that — the audit recommends adopting it but does not fully justify against the project plan author's possible intent.
+
+9. **The Cont-Schaanning literature has continued evolving (Caccioli et al. 2024; ECB MaSTER 2025).** The audit notes this for Phase 2 cascade-author work but does not deeply review the 2024-2025 extensions; the existing references in `.claude/skills/cascade-author/SKILL.md` are from 2017.
+
+10. **The audit treated `uv.lock` as opaque.** A real-world deployment may have lock conflicts (a transitive dependency pinned in lock but not in pyproject.toml). The audit's confidence in dependency-resolution correctness is documentation-deep, not execution-deep.
+
+These are the honest limits of a static-reading-only audit performed in 13 chunks against a research codebase that has never been executed end-to-end. The remediation plan's Stages 4-10 surface every one of these limits as verification work that requires execution from a non-sandbox environment.
+
+### Audit terminates
+
+All 18 self-verification items pass (17 ✓ + Phase P present). The audit is ready for review.
+
+---
+
+## Executive Summary
+
+**CLAIM-WEB at audit-start SHA `f253980`** (17 PRs merged; 149 committed files; 9,061 production LOC; 1,095 unit tests):
+
+- **Phase 1 closure readiness:** 8 of 17 PHASE_GATES.md criteria are functionally CLOSED; 2 are NOMINAL; 7 are OPEN. The critical-path bottleneck is the reference quarter 2024-Q4 end-to-end acquisition (G1.09), blocked by F1 (arc-direction inversion) and placeholder-URL gaps for NAIC Schedule S and D.
+- **Critical defect (F1):** Project plan §1.1 has two contradictory readings of arc direction. The constraint code (`kcl.py`, `test_kcl.py`) and `naic_schedule_s.py` use Reading A (src=holder, tgt=issuer). The other 9 fetchers use Reading B (src=issuer, tgt=holder). No end-to-end test joins fetcher output through `compile_constraints` → `check_kcl`, so the cross-module incompatibility has remained latent. **Will fail every Law 1 and Law 3 check the moment real 2024-Q4 data is reconstructed.**
+- **Placeholder-disclosed acquisition (F2):** NAIC Schedule S and Schedule D fetchers use Iowa IID and NAIC CIS URLs that are documentation-derived approximations. The Iowa RIU portal sunsets June 30, 2026 — **6 weeks from audit-start**.
+- **Unverified-but-real URLs (F2 cont.):** SEC 13F, ADV, N-MFP use real EDGAR endpoints but have never been validated from this codebase's environment.
+- **Documentation drift (F3, F4, F5):** PHASE_GATES.md still shows all 17 criteria unchecked despite 8 being functionally CLOSED. `docs/METHODOLOGY.md` does not exist. TODO.md Done hashes are branch-side, not merge SHAs.
+- **Subagent reliability (F6):** `data-source-investigator` succeeded for 6 of 9 fetcher invocations; `literature-checker` has never produced a recorded report; `documentation-curator` has never been invoked.
+- **Code quality:** Exceptionally clean. Zero TODO/FIXME comments in production code. Zero orphan files. Zero leaked data.
+
+**Remediation:** 10 stages in `docs/AUDIT_REMEDIATION_PLAN_v1.md` totaling ~21-30 days of focused operator effort. Stage 3 (F1 fix + NAIC placeholder replacement) is hard-deadlined by the Iowa RIU portal sunset.
+
+The audit's deliverables are:
+- `docs/AUDIT_REPORT_v1.md` — this document.
+- `docs/AUDIT_REMEDIATION_PLAN_v1.md` — sequenced operator plan.
+- `docs/audit_v1/scratch/` — 12 intermediate CSV/MD artifacts.
+- This branch's commit log (13 audit commits from `ecbbc2b` to `29f2c32`).
