@@ -1,0 +1,50 @@
+source_doc,mentioned_path,present_in_trunk,classification
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/base.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/z1.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/sec_xbrl.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/sec_nmfp.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/sec_adv.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/sec_13f.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/sec_focus.py,NO,Future-work (Phase 2/3: FFIEC FOCUS for I4 dealer banks)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/sec_nXXa.py,NO,Future-work (Phase 2/3: BDC N-54A/C)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/naic_schedule_s.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/naic_schedule_d.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/naic_schedule_ba.py,NO,Future-work (Phase 2: NAIC Schedule BA alt investments)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/naic_schedule_db.py,NO,Future-work (Phase 2: NAIC Schedule DB derivatives)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/fhlb_combined.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/fhlb_district.py,NO,Future-work (Phase 2: FHLB district 10-Q/K)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/frb_efa_fabs.py,YES,Present
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/fio_annual.py,NO,Future-work
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/ofr_publications.py,NO,Future-work
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/bma_register.py,NO,Future-work (Phase 2/3: Bermuda Monetary Authority)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/treasury_tic.py,NO,Future-work (Phase 2: Treasury TIC)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/fetchers/ffiec_y9c.py,NO,Future-work (Phase 2/3: FFIEC Y-9C)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/constraints/,YES,Present (kcl/double_entry/sectoral/flow_funds/compile/prior all present)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/reconstruct/,YES,Present (stubs only)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/cascade/,YES,Present (stubs only)
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/output/network/{period}/arcs.parquet,NO,Output artifact — will be created when reconstruction runs
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/output/network/{period}/nodes.parquet,NO,Output artifact
+docs/CLAIM_WEB_PROJECT_PLAN.md,claimweb/output/network/{period}/quality_report.json,NO,Output artifact
+docs/PHASE_GATES.md,docs/METHODOLOGY.md,NO,Promised-not-delivered (F4)
+docs/PHASE_GATES.md,docs/validation/,NO,Phase 2 deliverable (retrodiction reports — out of scope for Phase 1)
+docs/PHASE_GATES.md,docs/reviews/,NO,Phase 4 deliverable
+docs/PHASE_GATES.md,tests/validation/tolerances.py,NO,Phase 3 deliverable
+docs/PHASE_GATES.md,scripts/check_conservation.py,YES,Present
+CLAUDE.md,claimweb/,YES,Present
+CLAUDE.md,docs/CLAIM_WEB_PROJECT_PLAN.md,YES,Present
+CLAUDE.md,docs/REGULATORY_ARBITRAGE.md,YES,Present
+CLAUDE.md,docs/PHASE_GATES.md,YES,Present
+CLAUDE.md,data/raw/,YES,Present (placeholder)
+CLAUDE.md,data/normalized/,YES,Present (placeholder)
+CLAUDE.md,data/output/,YES,Present (placeholder)
+CLAUDE.md,scripts/check_conservation.py,YES,Present
+CLAUDE.md,scripts/check_data_sources.sh,YES,Present
+CLAUDE.md,scripts/precommit_gate.sh,YES,Present
+CLAUDE.md,.claude/skills/,YES,Present (9 skills)
+CLAUDE.md,.claude/agents/,YES,Present (5 agents)
+CLAUDE.md,.claude/hooks/,NO,Misleading reference — hooks live in scripts/ and are wired via .claude/settings.json; there is no .claude/hooks/ directory. Minor naming drift; settings.json points to scripts/*.sh.
+TODO.md,docs/PHASE_GATES.md,YES,Present
+TODO.md,docs/METHODOLOGY.md,NO,Promised-not-delivered
+README.md,/claimweb-bootstrap,YES,Present (.claude/commands/claimweb-bootstrap.md)
+README.md,data/,YES,Present
+README.md,notebooks/,YES,Present (placeholder)

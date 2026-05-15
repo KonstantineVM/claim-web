@@ -491,3 +491,121 @@ The audit checked `data/raw/` for any cached acquisition output. Result: directo
 No orphan production files, no orphan tests, no orphan agents. Every committed file has a documented role. The single substantive defect surfaced in Phase 1 (Schedule S arc-direction inversion) propagates into Phase 2's arc-emission ground truth and motivates Stage 3 of the remediation plan.
 
 ---
+
+## Phase 3 — Code-Documentation Reconciliation
+
+### 3a. Documented-but-Missing
+
+`docs/audit_v1/scratch/05_doc_path_references.csv` records all file paths referenced by name in documentation. The 50-row table groups into three classifications: **Present** (32 rows), **Future-work / out-of-scope** (15 rows — Phase 2-5 fetchers and artifacts), **Promised-not-delivered** (3 rows — Phase 1 documents that should exist).
+
+**Promised-not-delivered (action items):**
+
+1. **`docs/METHODOLOGY.md`** — referenced at `docs/CLAIM_WEB_PROJECT_PLAN.md:743` ("METHODOLOGY.md — Formal mathematical specification" as a root-level file in the planned layout); referenced at `docs/PHASE_GATES.md:33` as a Phase 1 closure criterion; referenced at `TODO.md:29` as a Backlog item. Does not exist. This is Phase 1 Finding F4 reaffirmed. Remediation in Stage 9.
+
+2. **`.claude/hooks/`** — `CLAUDE.md` line ~93 reads "For deterministic guardrails, hooks are in `.claude/hooks/` and `.claude/settings.json`". The directory does not exist. Hooks live in `scripts/` (e.g. `scripts/guard_bash.sh`) and are wired by `.claude/settings.json` which contains `bash ${CLAUDE_PROJECT_DIR}/scripts/*.sh` invocations. This is **minor naming drift**: the conceptual placement implied by CLAUDE.md doesn't match the actual layout. Either move the scripts to `.claude/hooks/` or update CLAUDE.md. The audit considers this a Stage-1 documentation fix.
+
+3. **`claimweb/fetchers/fred.py`** — `docs/CLAIM_WEB_PROJECT_PLAN.md:1188` reads "`fetchers/fred.py` (FSR) → `claimweb/fetchers/fred.py` with extensions for Z.1 instrument-level tables." The actual trunk uses `claimweb/fetchers/z1.py` (which acquires from the FRB Data Download Program, not FRED). The §11 layout at L562 correctly names `z1.py`; only the §15 prose at L1188 keeps the legacy `fred.py` name. **Minor doc drift.** The §11 layout supersedes; update §15 prose.
+
+**Future-work (Phase 2+ scope — no remediation needed in Phase 1):**
+
+Project plan §11 layout enumerates 18 fetchers. Trunk has 10. The 8 missing fetchers are all out-of-scope for Phase 1 per project plan §10 data-source phasing:
+
+| Missing fetcher | Plan section | Phase |
+|---|---|---|
+| `sec_focus.py` (Broker-Dealer FOCUS X-17A-5) | §10.8 | 2 (I4 dealer banks need this for cascade) |
+| `sec_nXXa.py` (BDC N-54A/C elections) | §10 (implied) | 2-3 (I8 BDC nodes) |
+| `naic_schedule_ba.py` (alt investments) | §10.3 BA | 2 |
+| `naic_schedule_db.py` (derivatives) | §10.3 DB | 2-3 |
+| `fhlb_district.py` (11 district 10-Q/10-K) | §10.4 | 2 (supplement to fhlb_combined for top-10 lists per district) |
+| `fio_annual.py` | §10.10 | 2 |
+| `ofr_publications.py` | §10.11 | 2 |
+| `bma_register.py` (Bermuda Monetary Authority) | §10.12 | 2 (T2 offshore reinsurer asset side) |
+| `treasury_tic.py` | §10.13 | 2 (M5 cross-border) |
+| `ffiec_y9c.py` | §11 layout | 2-3 |
+
+These are correctly absent in Phase 1; the Phase 1 gate in PHASE_GATES.md does not list any of them as Phase 1 closure criteria. No action required.
+
+**Phase-2-output artifacts referenced as `claimweb/output/network/{period}/arcs.parquet` etc.** are output paths that will be created when the reconstruction solver runs. The project plan §13 Phase E describes them; the audit confirms `data/output/.gitkeep` is the only placeholder. No remediation in Phase 1.
+
+### 3b. Present-but-Undocumented
+
+`docs/audit_v1/scratch/03_file_inventory.csv` lists every Python file in trunk. Cross-referencing against documentation mentions, four files exist that no documentation mentions by name:
+
+1. **`claimweb/constraints/prior.py`** (13 LOC stub). Project plan §13 Phase B refers to "soft constraints from prior knowledge — entity-type compatibility … These appear as additional regularizers in the estimation objective." The constraint-author skill does not name `prior.py` specifically. The file is a placeholder for future implementation; the docstring is appropriately scoped. **Verdict: Present-as-scaffolding; documented in spirit by §13 Phase B.**
+
+2. **`claimweb/abm/agents/__init__.py`** (1 LOC). The `claimweb/abm/` subpackage is referenced in CLAUDE.md and project plan Part XII. The nested `abm/agents/` is not separately documented. Scaffolding only; will house agent classes per project plan §38. **Verdict: Internal scaffolding.**
+
+3. **`claimweb/reconstruct/validate.py`** (15 LOC stub). The four reconstruct files at `max_entropy.py`, `min_density.py`, `solver.py`, `validate.py` together implement project plan §13. `validate.py` is the reconstruction self-validation hook; the docstring names its role. The reconstruction-author skill mentions a self-validation step but does not name the file. **Verdict: Internal scaffolding for the reconstruction module.**
+
+4. **`tests/conftest.py`** (1 LOC docstring). Empty conftest — no shared fixtures. Reserved for future use. **Verdict: Scaffolding.**
+
+No files in trunk fall into the "Dead code" or "Aborted session" categories. Every file has at least an inbound import from a tested module or is itself a documented stub. The audit considers this clean.
+
+### 3c. Documented-with-Wrong-Description and Arc-Direction Reconciliation
+
+This phase examines whether descriptions in documentation match what the code actually does.
+
+#### 3c.1 Arc-direction convention across fetchers (extends Phase 2a)
+
+The audit's central methodological finding is the inconsistent arc-direction convention. The authoritative statement is `docs/CLAIM_WEB_PROJECT_PLAN.md` §1.1 (lines ~30–32): "let $x_{ij}^k(t) \geq 0$ be the dollar volume of instrument $k$ that is held by $i$ as an asset and issued by $j$ as a liability ... the **arc weight** on the directed edge from issuer $j$ to holder $i$." Translation: **source = issuer; target = holder**.
+
+Per-arc-class verification of every Phase 1 fetcher (cross-referenced with `04_arc_emissions.csv`):
+
+| Arc class | Fetcher | Code direction | §1.1 expected | Verdict |
+|---|---|---|---|---|
+| A1 (funding agreements) | `sec_xbrl.py:157` | source=`{entity_id}` (insurer issuer) → target=`z1:all_holders` | issuer=insurer → holder=z1 | ✓ |
+| A2 (FABNs) | `frb_efa_fabs.py:101-111` | source=`sector:fabn_spv` → target=`efa:*_holders` | issuer=SPV → holder=sector | ✓ |
+| A2 | `sec_nmfp.py:379` | source=`spv:cusip:*` → target=`mmf:*` | issuer=SPV → holder=MMF | ✓ |
+| A2 | `z1.py:121` | source=`sector:fabn_spv` → target=`sector:life_insurance_companies` | issuer=SPV → holder=insurer | ✓ |
+| A3 (FHLB advances) | `fhlb_combined.py:461,530` | source=`insurer:*` → target=`fhlb:system` | issuer=insurer (carries advance as liability) → holder=FHLB (advance as asset) | ✓ |
+| A3 | `sec_xbrl.py:141` | source=`{entity_id}` → target=`sector:fhlb` | issuer=insurer → holder=FHLB | ✓ |
+| A3 | `z1.py:125` | source=`sector:life_insurance_companies` → target=`sector:fhlb` | issuer=insurer → holder=FHLB | ✓ |
+| A4 (repo) | `sec_xbrl.py:146` | source=`{entity_id}` → target=`sector:repo_dealers` | issuer=repo borrower (insurer) → holder=dealer | ✓ |
+| A5 (sec-lending collateral) | `sec_xbrl.py:151` | source=`{entity_id}` → target=`sector:sec_lending_counterparty` | issuer=insurer (owes collateral return) → holder=counterparty | ✓ |
+| **A6 (reinsurance)** | **`naic_schedule_s.py:648-651`** | **source=`insurer:naic:` (cedent) → target=`reinsurer:`** | **issuer=reinsurer (issued recoverable obligation) → holder=cedent (holds recoverable asset)** | **✗ INVERTED — see Finding F1** |
+| A7 (CLO mezz) | `naic_schedule_d.py:731` | source=`issuer:clo:*` → target=`insurer:naic:*` | issuer=CLO → holder=insurer | ✓ |
+| A8 (MMF shares) | `z1.py:115` | source=`sector:money_market_funds` → target=`sector:life_insurance_companies` | issuer=MMF → holder=insurer | ✓ |
+| A9 (bank deposits) | `z1.py:113` | source=`sector:depository_institutions` → target=`sector:life_insurance_companies` | issuer=bank → holder=insurer | ✓ |
+| A10 (gov't sec) | `naic_schedule_d.py`, `z1.py:117` | source=`issuer:us_treasury` or `sector:gse` → target=`insurer:` or `sector:life_insurance_companies` | issuer=Treasury/GSE → holder=insurer | ✓ |
+| A11 (equity) | `sec_13f.py:332` | source=`corp:cusip:*` → target=`aam:cik:*` | issuer=corp → holder=AAM fund | ✓ |
+| A11 (G3 ownership) | `sec_adv.py:522` | source=`aam:crd:*` → target=related-entity | (ambiguous; see 3c.2) | ⚠ |
+| A12 (other) | `naic_schedule_d.py`, `sec_13f.py`, `sec_xbrl.py`, `z1.py` | source=issuer → target=holder | issuer→holder | ✓ |
+
+**Result:** every arc class except A6 (Schedule S) and A11-G3 (Schedule R from ADV) follows §1.1. The two exceptions are both methodological flags that require resolution before Phase 1 closure.
+
+#### 3c.2 G3 ownership-arc direction ambiguity
+
+Project plan §3.2 (G3 description) reads: "Directed graph. Operating entities point to their controlling parent. Apollo → Athene (control)…" In graph notation, "A → B" with A=Apollo, B=Athene reads as edge from A to B. The prose disambiguator "operating entities point to their controlling parent" suggests source = operating entity = Athene; target = parent = Apollo. But the example "Apollo → Athene" reads in graph notation as source = Apollo; target = Athene.
+
+These two readings contradict each other within §3.2. The CHANGELOG for PR #13 sec_adv (CHANGELOG L274 around): "Apollo → Athene, KKR → Global Atlantic, Blackstone → F&G" — author's reading is source = parent.
+
+`sec_adv.py:522`: emits `source_node_id=_aam_node_id(crd)` (the parent AAM's CRD) and `target_node_id=_related_node_id(related_entity_info)`. Code matches the second reading (parent → affiliate).
+
+Whether this is "correct" depends on the §3.2 author's intent, which the prose does not unambiguously specify. **The audit flags this as a methodological clarification needed in the remediation plan, alongside the A6 inversion.** Both are documentation-vs-code conflicts where the project plan is internally ambiguous.
+
+#### 3c.3 SEC XBRL "balance-sheet marginals as arcs" semantics
+
+`sec_xbrl.py:125-157` `_TAG_MAP` emits records framed as `ArcFact(source, target, arc_class, amount)` for the `Assets`, `Liabilities`, `StockholdersEquity` XBRL tags. These tags are entity-level totals, not arcs in the network-instrument sense. Project plan §10.2 says XBRL "provides per-entity balance sheet aggregates at quarterly cadence. **The marginals of each insurer's, bank's, AAM-holding-company's, and FHLB district's balance sheet.**" So §10.2 acknowledges these are marginals, not arcs.
+
+The code packages them as `ArcFact`s pointing to/from `z1:aggregate` and `z1:equity_holders`. Downstream consumers (constraints, reconstruction) must distinguish these synthetic arcs from real instrument arcs. Whether they do correctly cannot be verified without reading the `compile.py` integration logic carefully — flagged for Phase 7a (constraint completeness verification).
+
+The current encoding works for KCL boundary terms (which need `(entity_id, side, amount)` triples), and the "fake target" `z1:aggregate` is a sink for the marginal. The risk is that `build_sectoral_rows` or `build_double_entry_rows` might inadvertently apply Law 2 or Law 3 to these synthetic arcs as if they were real instrument arcs. The audit flags this as a verification gap, not a confirmed defect.
+
+#### 3c.4 Other description-vs-code discrepancies (minor)
+
+- CHANGELOG PR #16 L142 claims `naic_schedule_d.py` is 887 lines; actual is 1,000. Likely post-PR linting edits. **Benign.**
+- CHANGELOG PR #17 L72 claims `sec_13f.py` is "≈400 lines"; actual is 749. Same pattern. **Benign.**
+- CHANGELOG PR #1 L946 claims 73 unit tests at bootstrap; the current `test_package_skeleton.py` has 3 def test_ but parametrized over `_SUBPACKAGES + _SUBMODULES` (the 73 entries the count refers to). Static-vs-runtime distinction. **Benign.**
+
+### 3. Phase 3 Summary
+
+- **Documented-but-missing — action items (3):** METHODOLOGY.md (F4), `.claude/hooks/` naming drift, `fred.py` legacy reference. All in Stage 1 of remediation plan.
+- **Documented-but-missing — out-of-scope (15+):** Phase 2+ fetchers and artifacts. No Phase 1 action.
+- **Present-but-undocumented (4):** All are valid scaffolding files (`prior.py`, `abm/agents/__init__.py`, `reconstruct/validate.py`, `conftest.py`). No remediation.
+- **Documented-with-wrong-description (3+):**
+  - Schedule S arc direction inverted vs §1.1 (F1; remediation Stage 3)
+  - Schedule R/ADV G3 ownership direction ambiguous in project plan §3.2 (new finding F1a; remediation Stage 1 with §3.2 clarification)
+  - SEC XBRL marginals encoded as arcs (verification gap; resolved in Phase 7a)
+- **Minor doc drift (3):** line-count claims, fred.py legacy name, 73-test count. Benign.
+
+---
