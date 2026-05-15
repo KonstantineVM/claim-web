@@ -870,3 +870,91 @@ The minimal critical path to Phase 1 closure:
 **Total minimum critical path: ~3 weeks of focused work in a non-sandbox environment**, contingent on placeholder-URL investigation yielding viable acquisition paths.
 
 ---
+
+## Phase 7 — Theoretical and Methodological Correctness
+
+### 7a. Conservation-Law Completeness
+
+`docs/audit_v1/scratch/10_conservation_law_coverage.csv` records the build function, check function, and property-test inventory per law. The audit confirms the constraint-author skill's required property-test set (soundness, completeness, stability, independence) is met for every law:
+
+| Law | Build | Check | Soundness | Completeness | Stability | Independence | Extras |
+|---|---|---|---|---|---|---|---|
+| Law 1 (KCL) | `kcl.py:251` | `kcl.py:348` | ✓ (×2: build+check) | ✓ | ✓ | ✓ | — |
+| Law 2 (double-entry) | `double_entry.py:114` | `double_entry.py:213` | ✓ (×2) | ✓ | ✓ | ✓ | — |
+| Law 3 (sectoral) | `sectoral.py:146` | `sectoral.py:259` | ✓ (×2) | ✓ | ✓ | ✓ | — |
+| Law 4 (flow-of-funds) | `flow_funds.py:152` | `flow_funds.py:287` | ✓ (×2) | ✓ | ✓ | ✓ | provenance-roundtrip |
+| Compile (assembly) | `compile.py:138` | n/a | ✓ (KCL soundness via assembly) | n/a | ✓ (KCL RHS) | n/a (correctness via per-law) | unknowns-are-arc-keys; nonneg-count; Law-4-period-reference |
+
+**Property-test counts:** kcl 5; double_entry 5; sectoral 5; flow_funds 6 (extra: provenance); compile 5 (different property set focused on aggregation invariants). Total: 26 property tests across the constraint-system stack.
+
+**Compile-stage correctness.** `compile_constraints` always applies Law 1 (KCL); applies Laws 2/3/4 conditionally on whether the caller supplies their respective boundary terms. Non-negativity (`x ≥ 0`) is opt-in (default True). The `to_index()` method provides the bijection from ArcKey to integer column index that the reconstruction solvers need. The audit confirms via spot-read of `test_compile.py:529-577` that the soundness property test substitutes a balanced synthetic network's true arc values into each compiled constraint's `matrix_row` and verifies LHS == RHS. **Structurally sound.**
+
+**Conditioning analysis.** Neither `compile.py` nor the test suite computes the rank or condition number of the compiled sparse matrix. The audit considers this a gap:
+- Without rank verification, the audit cannot confirm the compiled system has a unique solution given the supplied boundary terms.
+- Without condition-number monitoring, downstream solvers may produce silently inaccurate solutions on poorly-conditioned matrices.
+- The remediation (Stage 5 of the plan) adds a rank-and-conditioning check to the compile stage and surfaces it in `CompiledSystem.summary()`.
+
+**Internal consistency of the four laws.** Spot-check of the law interactions:
+- Law 1 is convention-dependent (per the F1 finding: kcl.py uses Reading A; src=holder).
+- Law 2 is **convention-agnostic** — it sums all arcs by instrument class regardless of direction, then compares to a boundary total. Whether arc-direction is Reading A or Reading B, the instrument total is the same.
+- Law 3 is convention-dependent: `build_sectoral_rows` separates asset-side and liability-side constraints by computing `sum of outgoing arcs from sector nodes` for the asset side. Under Reading A this is correct; under Reading B it would be inverted.
+- Law 4 is convention-agnostic — it identifies arcs by `(src, tgt, instrument)` tuple and verifies $x(t+1) - x(t) = F + R$ on that tuple. Whatever direction the fetcher chose, Law 4 tracks it consistently across periods.
+
+**Therefore Law 1 (kcl) and Law 3 (sectoral) are the two constraint modules whose correctness depends on the F1 convention reconciliation.** Law 2 and Law 4 will work regardless. The Stage-3 remediation that flips 9 fetchers must be tested against both `check_kcl` and `check_sectoral` to confirm the post-flip network passes both.
+
+### 7b. Reconstruction and Validation Methodology Readiness
+
+#### Reconstruction stubs
+
+The four reconstruction modules at `claimweb/reconstruct/{max_entropy.py, min_density.py, solver.py, validate.py}` are all docstring-only stubs (14-21 LOC). The audit verified each docstring against the cited methodology:
+
+- **`max_entropy.py`** — cites Upper (2011) for the survey and Upper (2004) implicit; mathematical form `H(X) = -sum x_{ij}^k log x_{ij}^k`; "convex; solved by RAS / iterative proportional fitting"; cvxpy boundary. **Matches project plan §13 Phase C.1.** Planned interface: `solve_max_entropy(system, *, max_iter, tol) -> SolvedNetwork`. The skill mandate to spawn `literature-checker` against Upper (2004) before writing code is documented in the docstring and reaffirmed in TODO.md L20.
+- **`min_density.py`** — cites Anand-Craig-von Peter (2015), *Quantitative Finance* 15(4):625-636; describes the combinatorial relaxation. **Matches project plan §13 Phase C.2.** Planned interface: `solve_min_density(system, *, max_iter, tol) -> SolvedNetwork`. Skill mandate to spawn `literature-checker` against the paper.
+- **`solver.py`** — bracketing harness; runs both ME and MD; reports per-arc `(ME, MD)` band as structural-uncertainty per CLAUDE.md standing rule. Planned interface: `reconstruct(facts, *, period, methods=("max_entropy", "min_density")) -> BracketedNetwork`. **Matches project plan §13 phase summary and CLAUDE.md "both reconstruction methods run".**
+- **`validate.py`** — reconstruction self-validation hook; not deeply specified in stub but implied to run `check_kcl`/`check_double_entry`/`check_sectoral`/`check_flow_funds` against the solved network. The CLAUDE.md "conservation laws are invariants" rule mandates this.
+
+**The mathematical specifications in the stub docstrings are consistent with the project plan.** Implementation will require:
+1. `literature-checker` against Upper (2004) — currently not completed due to budget-cap-killed session.
+2. `literature-checker` against Anand-Craig-von Peter (2015).
+3. cvxpy-based reference implementation for ME on small subnetworks (to verify the RAS iteration converges to the convex optimum).
+4. Python port of the published Anand-Craig-von Peter heuristic for MD.
+5. Bracketing harness composes the two and emits `BracketedNetwork` records consumed by `claimweb/visualize/sankey.py`.
+
+#### Validation episode stubs
+
+`claimweb/validation/ep1_2007_xfabs.py`, `ep2_2008_aig_seclending.py`, `ep3_2020_covid_stress.py` are all 12-15 LOC docstring stubs. The docstrings name the right episodes and the right test artifact (the project's "must retrodict within tolerance" requirement per CLAUDE.md). The `retrodiction-replayer` subagent exists in `.claude/agents/` and is referenced from the `validation-author` skill. **Scaffolding is in place; implementations are correctly Phase 3 scope.**
+
+Tolerances are not yet defined. PHASE_GATES.md L58 mentions `tests/validation/tolerances.py` as a Phase 3 deliverable; the file does not exist. The audit does not flag this as a current gap because Phase 3 is months 13–18 per project plan §35.
+
+#### G3 ownership-graph direction (Phase 3c.2 follow-through)
+
+Project plan §3.2 prose contains an internal ambiguity in the G3 ownership-graph direction:
+- "Operating entities point to their controlling parent" — operating entity is source; parent is target.
+- "Apollo → Athene (control); Apollo → MidCap Financial (control)" — Apollo is source; controlled entity is target.
+
+These two statements give opposite directions. The `sec_adv.py:522` code emits `source=aam:crd:{parent}, target=related_entity` — i.e., parent → affiliate, matching the "Apollo → Athene" example reading. The first prose sentence is inconsistent.
+
+The audit recommends Stage 1 of the remediation plan include a §3.2 prose clarification choosing one reading. The code as written is internally consistent with the example; the documentation should be fixed.
+
+#### Convention consistency across the four laws (revisiting F1)
+
+Per 7a above, only Laws 1 and 3 depend on the arc-direction convention. The audit's recommendation in F1 (adopt Reading A: src=holder, tgt=issuer) propagates as follows:
+
+- **kcl.py** — already implements Reading A. **No change.**
+- **double_entry.py** — convention-agnostic. **No change.**
+- **sectoral.py** — implements Reading A (sums outgoing arcs from sector nodes as the asset side). **No change.**
+- **flow_funds.py** — convention-agnostic. **No change.**
+- **compile.py** — convention-agnostic at the assembly layer. **No change.**
+
+All 5 constraint modules are already aligned with Reading A. Only the 9 affected fetchers need source/target inversion.
+
+### 7. Phase 7 Summary
+
+- **All four conservation laws** have build_*_rows and check_* functions, with 5 property-tests each (soundness, completeness, stability, independence; double-soundness for build+check). Implementation is mathematically sound under Reading A.
+- **Compile stage** is structurally sound; lacks rank/condition-number reporting (Stage 5 of remediation).
+- **Laws 1 and 3 are convention-dependent.** Their correctness when joined with fetcher output depends on resolving the F1 finding.
+- **Reconstruction stubs** match the cited methodology. Implementation requires `literature-checker` invocations that have not yet been completed.
+- **Validation episode stubs** are correctly Phase 3 scope; scaffolding is in place.
+- **G3 ownership direction** ambiguity in project plan §3.2 prose; code follows one reading consistently.
+
+---
