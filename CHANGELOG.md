@@ -24,6 +24,74 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: SEC Form N-MFP money market fund holdings
+
+- **What:** Implemented `claimweb/fetchers/sec_nmfp.py` — the `SecNmfpFetcher`
+  for SEC Form N-MFP money market fund portfolio holdings (project plan §10.5).
+  Full public interface matches `BaseFetcher` contract:
+  - `list_available_periods()` — scans `data/raw/sec_nmfp/` for cached period
+    directories; returns sorted list of quarters.
+  - `acquire(period)` — queries EDGAR EFTS for all N-MFP filings in the 25-day
+    window after the quarter's month-end (the filing due-date window); for each
+    filer, derives the primary XML URL via the EDGAR submissions JSON
+    (`data.sec.gov/submissions/CIK{cik}.json`), downloads the XML, and caches
+    it under `data/raw/sec_nmfp/{period}/`. Returns a `RawDataHandle` referencing
+    all cached XMLs. Cache lifetime: 30 days (monthly filings are final once
+    filed).
+  - `parse(handle)` — parses all cached N-MFP XMLs; skips non-prime funds
+    (Government, Tax Exempt); extracts holdings with category in
+    `_FABN_CATEGORIES` ({"Other Note", "Other Instrument"}); emits one `ArcFact`
+    per holding.
+  - `validate(facts)` — checks arc class (A2), non-negative amounts, `spv:`
+    source prefix, `mmf:` target prefix; surfaces name-based SPV IDs (lacking
+    CUSIP) as info-level issues for registry review.
+  Key design decisions:
+  - **Arc direction**: source = FABN issuer SPV (`spv:cusip:{cusip}` or
+    `spv:name:{slug}`), target = MMF fund series (`mmf:{series_id}` or
+    `mmf:cik:{zero-padded-cik}`).
+  - **Arc class**: `ArcClass.A2` (FABNs) for all holdings.
+  - **Data quality**: `DIRECT_MEASURED` — CUSIP-level SEC regulatory disclosure.
+  - **Unit conversion**: `amortizedCostAmt` (raw USD) × 0.000001 → millions USD.
+  - **Fund filter**: only prime funds (`fundCategory` ∈ `_PRIME_FUND_CATEGORIES`)
+    contribute ArcFacts; government/treasury/tax-exempt funds are skipped.
+  - **Schema handling**: N-MFP XML namespace `http://www.sec.gov/edgar/nmfp`
+    handled for both namespaced and non-namespaced element access; both pre-
+    and post-2016 schemas parsed via the same path (N-MFP2 `fundCategory` field).
+  - **EDGAR rate limiting**: 150 ms between requests (≈ 6.7 req/sec ≤ EDGAR
+    10 req/sec policy).
+  Helper functions: `_period_to_month_end`, `_period_to_filing_window`,
+  `_parse_rep_period_date`, `_date_to_period`, `_normalise_name`, `_spv_node_id`,
+  `_mmf_node_id`, `_text`, `_parse_nmfp_xml`.
+  Fixtures: `tests/fixtures/sec_nmfp/prime_fund_q4_2024.xml` (5 holdings: 2×
+  Other Note with CUSIPs, 1× Other Instrument, 1× US Treasury excluded, 1× Other
+  Note without CUSIP) and `tests/fixtures/sec_nmfp/govt_fund_q4_2024.xml`
+  (Government fund — fully filtered).
+  Test file: `tests/unit/test_sec_nmfp.py` — 145 tests (3 property-based via
+  hypothesis: schema compliance, billion-to-million conversion, all prime
+  categories produce facts); gate green with 781 total passing.
+- **Why:** Phase 1 fetcher coverage (project plan §10.5). N-MFP provides
+  CUSIP-level FABN holdings for prime MMFs — the A2 arc structure on the MMF
+  side of the circuit. Cross-references with the FRB EFA FABS aggregate (Law 3
+  constraint) and enables double-entry consistency checks against SPV-issuer
+  totals (Law 2). The XFABS holdings (`isDemandFeature=Y` within "Other Note"
+  category) are the key instrument for the 2007-Q3 validation episode.
+- **Result:** `claimweb/fetchers/sec_nmfp.py`,
+  `tests/fixtures/sec_nmfp/prime_fund_q4_2024.xml`,
+  `tests/fixtures/sec_nmfp/govt_fund_q4_2024.xml`,
+  `tests/fixtures/sec_nmfp/__init__.py`,
+  `tests/unit/test_sec_nmfp.py`.
+- **Failed:** (1) Data-source-investigator agent was unable to fetch live EDGAR
+  data due to network restrictions in the execution environment; implementation
+  proceeded from public SEC documentation and known N-MFP schema. (2) The ruff
+  linter flagged `try`/`except`/`pass` (SIM105) and `zip()` without `strict=`
+  (B905); fixed with `contextlib.suppress` and `strict=False`. (3) The `contextlib`
+  import was dropped by the post-edit formatter hook requiring a second edit. (4)
+  Test `test_parse_missing_file_skipped` initially tried to construct a
+  `RawDataHandle` for a non-existent file via `from_paths` (which calls
+  `_sha256_file`) — fixed by constructing the handle directly.
+- **Next:** `claimweb.fetchers.sec_adv` (SEC Form ADV investment adviser
+  registrations, project plan §10.6).
+
 ### 2026-05-15 — fetcher: FRB Enhanced Financial Accounts FABS daily dataset
 
 - **What:** Implemented `claimweb/fetchers/frb_efa_fabs.py` — the

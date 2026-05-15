@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edgarSubmission xmlns="http://www.sec.gov/edgar/nmfp">
+  <formData>
+    <genInfo>
+      <seriesName>Test Government Money Market Fund</seriesName>
+      <seriesId>S000099998</seriesId>
+      <cik>0000999998</cik>
+      <repPeriodDate>2024-12-31</repPeriodDate>
+      <isNMFP1>N</isNMFP1>
+      <fundCategory>Government</fundCategory>
+      <totalNetAssets>10000000000</totalNetAssets>
+    </genInfo>
+    <invstOrSec>
+      <name>US Treasury Bond 4.25% 2025</name>
+      <identifiers>
+        <cusip>912828ZL7</cusip>
+      </identifiers>
+      <category>US Treasury Debt</category>
+      <maturityDate>2025-05-15</maturityDate>
+      <finalMaturityDate>2025-05-15</finalMaturityDate>
+      <isConditionallyDemandable>N</isConditionallyDemandable>
+      <isDemandFeature>N</isDemandFeature>
+      <amortizedCostAmt>5000000000</amortizedCostAmt>
+      <percentageOfMoneyMarketFundNetAssets>50.00</percentageOfMoneyMarketFundNetAssets>
+    </invstOrSec>
+    <invstOrSec>
+      <name>FHLB Discount Note</name>
+      <identifiers>
+        <cusip>313385CX3</cusip>
+      </identifiers>
+      <category>US Government Agency Debt</category>
+      <maturityDate>2025-02-28</maturityDate>
+      <finalMaturityDate>2025-02-28</finalMaturityDate>
+      <isConditionallyDemandable>N</isConditionallyDemandable>
+      <isDemandFeature>N</isDemandFeature>
+      <amortizedCostAmt>3000000000</amortizedCostAmt>
+      <percentageOfMoneyMarketFundNetAssets>30.00</percentageOfMoneyMarketFundNetAssets>
+    </invstOrSec>
+  </formData>
+</edgarSubmission>
