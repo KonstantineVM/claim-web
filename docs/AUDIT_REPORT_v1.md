@@ -726,3 +726,71 @@ This is the highest-priority Phase 1 remediation item and is reflected as Stage 
 - **F1 elevated to CRITICAL severity.** Project plan §1.1 has an internal contradiction; the codebase is split between Reading A (kcl.py, test_kcl.py, naic_schedule_s) and Reading B (9 other fetchers). This is a network-wide soundness defect that has not surfaced because no end-to-end test exists.
 
 ---
+
+## Phase 5 — Research-State Classification
+
+`docs/audit_v1/scratch/09_research_state.csv` is the per-file classification. The taxonomy follows the audit prompt §11 with CLAIM-WEB-specific adaptation. The narrative below summarizes counts per label and identifies the LIVE-LOAD-BEARING files.
+
+### 5.1 Label distribution
+
+| Label | Count | What it means |
+|---|---:|---|
+| LIVE-LOAD-BEARING | 9 | On the critical path of Phase 1 criteria; removing breaks something documented |
+| LIVE-PARSING-COMPLETE | 4 | Parses fixtures with full test coverage; URLs validated against live source |
+| LIVE-PARSING-UNVERIFIED | 3 | Parses fixtures cleanly; URLs real but never tested against live API from this codebase's environment |
+| LIVE-PARSING-PLACEHOLDER-ACQUISITION | 2 | Parses fixtures cleanly; URLs are documentation-derived placeholders |
+| STUB-WAITING-IMPLEMENTATION | 6 | Docstring stubs for Phase 1 deliverables; no implementation |
+| PARKED-AWAITING-DEPENDENCY | 21 | Phase 2/3 stubs awaiting prior work; correctly scoped out of Phase 1 |
+| DIAGNOSTIC-PERMANENT | 17 | Test modules + check_conservation.py; permanent regression infrastructure |
+| HARNESS | 27 | `.claude/` files + scripts + workflows + gitignore — operating environment, not application code |
+| ABANDONED-PRODUCING-ARTIFACT | 0 | None found |
+| ABANDONED-ARTIFACT-FREE | 0 | None found |
+| PROMISED-NOT-DELIVERED | 0 in trunk (3 referenced but not present: METHODOLOGY.md, .claude/hooks/, fred.py) | See Phase 3a |
+| SCOPED-OUT | 0 confirmed | `claimweb/normalize/` is a candidate — fetchers emit ArcFacts directly; the normalize layer in §11 appears redundant |
+| CLEANUP-ARTIFACT | 0 | None found |
+
+### 5.2 LIVE-LOAD-BEARING inventory
+
+These 9 files are critical-path for Phase 1 closure. Any defect in them invalidates downstream work.
+
+1. `claimweb/__init__.py` — sets Decimal precision globally per `.claude/rules/decimal-arithmetic.md`.
+2. `claimweb/fetchers/base.py` — defines `ArcFact`, `DataQualityFlag`, `BaseFetcher` ABC. All fetchers and the constraint compiler depend on these types.
+3. `claimweb/fetchers/__init__.py` — re-exports concrete fetchers.
+4. `claimweb/constraints/__init__.py` — re-exports law builders.
+5. `claimweb/constraints/kcl.py` — Law 1 + shared types (`ArcKey`, `LinearConstraint`, `ConstraintSet`, `NetworkState`, `NodeBalance`). The Reading A convention is rooted here.
+6. `claimweb/constraints/double_entry.py` — Law 2; convention-agnostic.
+7. `claimweb/constraints/sectoral.py` — Law 3; uses Reading A.
+8. `claimweb/constraints/flow_funds.py` — Law 4; convention-agnostic.
+9. `claimweb/constraints/compile.py` — assembles all four laws.
+
+The 4 LIVE-PARSING-COMPLETE fetchers (`fhlb_combined`, `frb_efa_fabs`, `sec_xbrl`, `z1`) are candidates for promotion to LIVE-LOAD-BEARING after their arc-direction convention is reconciled with kcl.py (per Stage 3 of remediation).
+
+### 5.3 Notable per-file annotations
+
+- **`claimweb/normalize/__init__.py`** (17 LOC) — the project plan §11 layout names this as "schema normalization" between fetchers and constraints. The current fetchers emit `ArcFact` records directly, and the constraint modules consume `ArcFact` records directly. **No intermediate normalization layer is needed in practice.** If the architecture stays this way, `claimweb/normalize/` should either be filled with the per-fetcher post-processing (sector-mapping, registry-lookup) that currently lives inside each fetcher's `parse()`, or be marked SCOPED-OUT and removed. The audit recommends a Stage-1 documentation decision.
+
+- **`claimweb/multiplier/__init__.py`** — project plan §14 reads "System-level claim multiplier" and "Per-cluster claim multipliers" as Phase 1 outputs. The PHASE_GATES.md Phase 1 list does not include claim-multiplier computation as a criterion, and TODO.md Backlog does not mention it. Whether claim-multiplier computation is Phase 1 or Phase 2 is ambiguous. The audit treats it as Phase 2 (after reference 2024-Q4 reconstruction).
+
+- **`tests/unit/test_kcl.py:141`** (`_make_arc` and `valid_network` strategy) — sets `equity = out_sum - in_sum` at each synthetic node, treating arc source as the asset-holder. This is internally consistent with kcl.py's Reading A but encodes the convention without cross-checking against any fetcher's emission convention. Phase 4 elevated F1 makes this a remediation target.
+
+- **`scripts/check_conservation.py`** (85 LOC; DIAGNOSTIC-PERMANENT) — invoked by `scripts/post_edit_check.sh` (PostToolUse hook) and `scripts/precommit_gate.sh`. It executes the four `check_*` functions on solved networks under `data/output/`. Since no solved network exists, the checker is currently a no-op in practice. Will become operational the moment the 2024-Q4 reconstruction runs.
+
+### 5.4 No orphans, no cleanup artifacts
+
+The audit found:
+- **Zero ABANDONED-ARTIFACT-FREE files.** Every Python file is either tested, stubbed for known future work, or harness scaffolding.
+- **Zero CLEANUP-ARTIFACT files.** No leftover branch artifacts, no orphan generated files.
+- **Zero files with no inbound imports AND no documentation reference.** Every file is reachable from at least one of: tests, fetcher exports, hook configuration, agent definitions, or stub-doctstring references in the plan.
+
+This is exceptionally clean for an autonomously-built repository. The autonomous loop's discipline — committing only complete units of work and updating CHANGELOG/TODO with each — has prevented orphan accumulation.
+
+### Phase 5 Summary
+
+- 9 LIVE-LOAD-BEARING files form the Phase 1 critical path.
+- 9 fetcher modules split: 4 live-validated, 3 unverified, 2 placeholder.
+- 6 STUB-WAITING-IMPLEMENTATION files are Phase 1 work items (the four reconstruct modules, prior.py, sankey.py).
+- 21 PARKED stubs are correctly scoped out of Phase 1.
+- 44 HARNESS + DIAGNOSTIC files form the operating environment.
+- No orphan/dead/cleanup files.
+
+---
