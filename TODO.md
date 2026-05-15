@@ -17,19 +17,18 @@ Claude does this without asking. The next session picks up the new Now.
 
 ## Now
 
-- **[constraints]** Implement `claimweb.constraints.double_entry`: Law 2 checker. Per project plan §1.1 and `constraint-author` skill.
+- **[fetcher]** Implement `claimweb.fetchers.sec_xbrl`: SEC companyfacts XBRL fetcher for the LIFE_INSURERS panel. Per project plan §10.2.
 
 ## Next
 
-1. **[fetcher]** Implement `claimweb.fetchers.sec_xbrl`: SEC companyfacts XBRL fetcher for the LIFE_INSURERS panel. Per project plan §10.2.
-2. **[constraints]** Implement `claimweb.constraints.sectoral`: Law 3 checker. Per project plan §1.1.
-3. **[constraints]** Implement `claimweb.constraints.flow_funds`: Law 4 checker. Per project plan §1.1.
-4. **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
-5. **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data.
-6. **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
-7. **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
-8. **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
-9. **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — spawn `data-source-investigator` first
+1. **[constraints]** Implement `claimweb.constraints.sectoral`: Law 3 checker. Per project plan §1.1.
+2. **[constraints]** Implement `claimweb.constraints.flow_funds`: Law 4 checker. Per project plan §1.1.
+3. **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
+4. **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data.
+5. **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
+6. **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
+7. **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — spawn `data-source-investigator` first
+8. **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
 
 ## Backlog
 
@@ -40,6 +39,7 @@ Per project plan §35 and `docs/PHASE_GATES.md`.
 - **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
 - **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
 - **[reconstruction]** `claimweb.reconstruct.min_density`: per project plan §13 Phase C; spawn `literature-checker` against Anand-Craig-von Peter (2015)
+- **[fetcher]** `claimweb.fetchers.sec_13f`: SEC Form 13F institutional holdings (per project plan §10.7)
 - **[reconstruction]** `claimweb.reconstruct.solver`: the harness that runs both methods and brackets per project plan §13
 - **[infra]** Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers
 - **[infra]** 2024-Q4 reconstructed via both methods; output in `data/output/network/2024-Q4/v1/`
@@ -68,6 +68,7 @@ Listed in `docs/PHASE_GATES.md`.
 
 <!-- Move completed items here. Keep ~30 days, prune monthly. -->
 
+- **[constraints]** 2026-05-15 — Implemented `claimweb.constraints.double_entry`: Law 2 (double-entry consistency). `build_double_entry_rows` emits one `LinearConstraint` per instrument with a known boundary term; `check_double_entry` verifies concrete networks. 40 tests (5 property-based via hypothesis: soundness, completeness, stability, independence). 319 total pass; gate green. See CHANGELOG 2026-05-15 "constraints: double-entry consistency (Law 2)".
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.z1`: `Z1Fetcher` with `list_available_periods`, `acquire`, `parse`, `validate`. Downloads all 7 target tables (L.116, L.121, L.207, L.208, L.211, L.226, L.227) from the FRB DDP; parses the CSV format; maps 27 key series to ArcFacts with `DIRECT_MEASURED`/`stock_eop`. 79 new tests including 3 property-based; 279 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "fetcher: FRB Z.1". Commit: 9b19adf.
 - **[constraints]** 2026-05-15 — Implemented `claimweb.constraints.kcl`: Law 1 (balance-sheet identity / KCL) checker. `build_kcl_rows` compiles one sparse linear equality per node; `check_kcl` verifies the identity on a concrete network. 35 tests (5 property-based via hypothesis: soundness, completeness, stability, independence, plus 30 unit tests). 200 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "constraints: balance-sheet identity Law 1". Commit: 2c64019.
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.fhlb_combined`: `FhlbCombinedFetcher` with `list_available_periods`, `acquire`, `parse` (A3 aggregate + named-insurer arcs), `validate`. Fixture at `tests/fixtures/fhlb_combined/2024-Q4-combined-financial-report.pdf`. 44 new tests; 165 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "fetcher: FhlbCombinedFetcher".
