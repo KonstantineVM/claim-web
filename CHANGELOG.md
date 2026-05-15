@@ -24,6 +24,85 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: SEC Form ADV investment adviser registrations
+
+- **What:** Implemented `claimweb/fetchers/sec_adv.py` — the `SecAdvFetcher`
+  for SEC Form ADV investment adviser registrations (project plan §10.6).
+  Full public interface matches `BaseFetcher` contract:
+  - `list_available_periods()` — scans `data/raw/sec_adv/` for cached period
+    directories; returns sorted list of quarters.
+  - `acquire(period)` — attempts to download the IAPD bulk ZIP from the SEC
+    data page (`https://www.sec.gov/investment/form-adv-data`); extracts
+    `ia_firm.csv` and `ia_schedule_r.csv`; falls back to EDGAR EFTS search
+    for individual ADV filings if bulk ZIP unavailable. Cache lifetime 90 days
+    (ADV filed annually with amendments). Caches under `data/raw/sec_adv/{period}/`.
+  - `parse(handle)` — reads firm CSV (CRD → RAUM mapping) and Schedule R CSV
+    (related persons); skips service-provider relationships (accounting firms,
+    law firms) and self-referential arcs; emits one A11 arc per financial
+    relationship (AAM parent → affiliated insurer/IA/fund/bank).
+  - `validate(facts)` — checks arc class (A11), non-negative RAUM amounts,
+    `aam:` source prefix; surfaces absence of insurer-target arcs as info.
+  Key design decisions:
+  - **Arc type**: `ArcClass.A11` (equity/ownership claims) for all G3
+    ownership arcs; this is the closest fit in the A1–A12 taxonomy for
+    an ownership/control relationship.
+  - **Arc direction**: source = AAM parent / controlling IA (`aam:crd:{crd}`),
+    target = related entity (prefix varies: `insurer:`, `aam:`, `fund:`,
+    `broker:`, `bank:`, `entity:`).
+  - **Dollar amount**: parent firm's total RAUM from ADV Part 1A Item 5.F,
+    in millions USD (raw USD × 0.000001). RAUM is a proxy for the financial
+    magnitude of the ownership cluster; `DataQualityFlag.PROXY` reflects this.
+  - **Service relationships excluded**: `Accounting Firm`, `Law Firm`, and
+    similar non-financial service providers in Schedule R are skipped via
+    `_SERVICE_RELATIONSHIP_TYPES` allowlist.
+  - **Self-referential arcs skipped**: Some IA filings list the IA itself
+    as a "related person"; arcs where source_node_id == target_node_id are
+    dropped silently.
+  - **IAPD bulk ZIP URL extraction**: `_extract_iapd_zip_url` parses the SEC
+    data page HTML for a ZIP href containing "adv", "ia_firm", or "iapd" keywords
+    (case-insensitive); falls back to any ZIP href on the page.
+  - **ZIP file name variants**: `_find_zip_entry` handles both lowercase
+    (`ia_firm.csv`) and uppercase (`IA_FIRM_SEC.csv`) file name conventions
+    used by different IAPD extract vintages.
+  - **Encoding**: CSV files decoded with UTF-8 BOM stripping (`utf-8-sig`)
+    and `errors="replace"` to handle Windows-1252 IAPD output.
+  Helper functions: `_normalise_name`, `_aam_node_id`, `_related_node_id`,
+  `_parse_raum`, `_parse_crd`, `_read_firm_csv`, `_read_schedule_r_csv`,
+  `_extract_iapd_zip_url`, `_parse_iapd_zip`, `_find_zip_entry`,
+  `_write_firm_csv`, `_write_sched_r_csv`.
+  Fixtures: `tests/fixtures/sec_adv/ia_firm.csv` (5 firms: Apollo, KKR,
+  Blackstone, MidCap, Small Adviser) and `tests/fixtures/sec_adv/ia_schedule_r.csv`
+  (11 rows: insurance companies, investment advisers, broker-dealer, pooled
+  vehicles, accounting firm, law firm, and other financial participants).
+  Test file: `tests/unit/test_sec_adv.py` — 96 tests (3 property-based via
+  hypothesis: schema compliance, name normalisation stability, RAUM non-negativity);
+  877 total passing; gate green.
+- **Why:** Phase 1 fetcher coverage (project plan §10.6). ADV Schedule R
+  provides the G3 ownership/affiliation graph for AAM-affiliated insurers,
+  CLO managers, BDCs, and offshore reinsurers. This is the data source for
+  identifying Apollo→Athene, KKR→Global Atlantic, Blackstone→F&G, and similar
+  closed-loop structures where the same parent earns fees at multiple circuit
+  steps. The closed-loop identification (project plan §3.5) depends on G3
+  being populated before the claim-multiplier calculation in Phase C.
+- **Result:** `claimweb/fetchers/sec_adv.py`,
+  `tests/fixtures/sec_adv/ia_firm.csv`,
+  `tests/fixtures/sec_adv/ia_schedule_r.csv`,
+  `tests/fixtures/sec_adv/__init__.py`,
+  `tests/unit/test_sec_adv.py`.
+- **Failed:** (1) Data-source-investigator agent launched but ran out of turns
+  before producing a final structured report; implementation proceeded from
+  project plan §10.6 documentation and public SEC/IAPD documentation. (2) The
+  initial property-based test `test_property_emitted_facts_pass_schema` used
+  the `tmp_path` pytest fixture directly in a `@given` function, which is not
+  supported by hypothesis (function-scoped fixtures are not reset between
+  examples); fixed by using `tempfile.TemporaryDirectory()` instead. (3) Ruff
+  flagged `try/except/pass` (SIM105), unused variable `cik` (F841), and
+  unused variable `firm_sha` (F841); fixed with `contextlib.suppress`, removing
+  the unused `cik` line, and removing `firm_sha`.
+- **Next:** `claimweb.fetchers.naic_schedule_s` (NAIC Schedule S reinsurance,
+  project plan §10.3) — spawn `data-source-investigator` first as specified in
+  TODO.md.
+
 ### 2026-05-15 — fetcher: SEC Form N-MFP money market fund holdings
 
 - **What:** Implemented `claimweb/fetchers/sec_nmfp.py` — the `SecNmfpFetcher`

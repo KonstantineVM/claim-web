@@ -17,17 +17,17 @@ Claude does this without asking. The next session picks up the new Now.
 
 ## Now
 
-- **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6). Per `fetcher-author` skill.
+- **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — spawn `data-source-investigator` first
 
 ## Next
 
-1. **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — spawn `data-source-investigator` first
-2. **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
-3. **[fetcher]** `claimweb.fetchers.sec_13f`: SEC Form 13F institutional holdings (per project plan §10.7)
-4. **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
-5. **[infra]** Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers
-6. **[reconstruction]** `claimweb.reconstruct.min_density`: per project plan §13 Phase C; spawn `literature-checker` against Anand-Craig-von Peter (2015)
-7. **[reconstruction]** `claimweb.reconstruct.solver`: the harness that runs both methods and brackets per project plan §13
+1. **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
+2. **[fetcher]** `claimweb.fetchers.sec_13f`: SEC Form 13F institutional holdings (per project plan §10.7)
+3. **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
+4. **[infra]** Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers
+5. **[reconstruction]** `claimweb.reconstruct.min_density`: per project plan §13 Phase C; spawn `literature-checker` against Anand-Craig-von Peter (2015)
+6. **[reconstruction]** `claimweb.reconstruct.solver`: the harness that runs both methods and brackets per project plan §13
+7. **[visualize]** Initial Sankey visualization for 2024-Q4 — per `visualization-author` skill
 ## Backlog
 
 ### Phase 1 — Foundation (months 1–6)
@@ -66,6 +66,7 @@ Listed in `docs/PHASE_GATES.md`.
 
 <!-- Move completed items here. Keep ~30 days, prune monthly. -->
 
+- **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.sec_adv`: `SecAdvFetcher` for SEC Form ADV investment adviser registrations. Downloads IAPD bulk CSV (ia_firm.csv + ia_schedule_r.csv), parses Schedule R to emit A11 ownership/affiliation arcs for G3 graph (AAM→insurer, AAM→IA, AAM→fund, etc.). Skips service-provider relationships; uses parent RAUM as PROXY arc amount. 96 tests (3 property-based); 877 total pass; gate green. See CHANGELOG 2026-05-15 "fetcher: SEC Form ADV". Commit: TBD.
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.sec_nmfp`: `SecNmfpFetcher` for SEC Form N-MFP MMF portfolio holdings. EDGAR EFTS discovery + per-filing XML download; filters prime funds; extracts "Other Note"/"Other Instrument" holdings as A2 arcs (SPV → MMF). `_parse_nmfp_xml` handles both pre- and post-2016 N-MFP schemas. 145 tests (3 property-based); 781 total pass; gate green. See CHANGELOG 2026-05-15 "fetcher: SEC Form N-MFP". Commit: 79851ec.
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.frb_efa_fabs`: `FrbEfaFabsFetcher` for the FRB EFA FABS daily dataset. Downloads `fabs-chart-data-historical.txt`, aggregates daily rows to quarterly end-of-period snapshots, emits A2 arcs (FABS US total + FABN MT/ST/XFABS/FABCP sub-components). 98 tests (3 property-based); 636 total pass; gate green. See CHANGELOG 2026-05-15 "fetcher: FRB EFA FABS". Commit: 57a9562.
 - **[constraints]** 2026-05-15 — Implemented `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system (`CompiledSystem` + `LawStats` + `compile_constraints`). Law 1 always applied; Laws 2/3/4 conditional on inputs; non-negativity opt-in. 57 tests (4 property-based); 538 total pass; gate green. Also fixed `precommit_gate.sh` to use `uv run pytest`. See CHANGELOG 2026-05-15 "constraints: compile". Commit: 7296c21.
