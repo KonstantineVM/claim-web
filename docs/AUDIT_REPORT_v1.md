@@ -367,3 +367,127 @@ Fixture CHANGELOG claims verified: Schedule D 15 rows ✓, Schedule S 17 rows �
 The 4 fully-validated fetchers (FHLB, FABS, Z.1, XBRL) can already acquire 2024-Q4. They cover A1, A2, A3, A4, A5, A8, A9, A10, A12 from the Z.1 sectoral side and entity-level totals from XBRL — enough to populate Law 3 constraints and Law 1 boundary terms. The missing pieces are A6 (reinsurance — Schedule S placeholder), A7 (CLO mezzanine — Schedule D placeholder), and A11 (AAM cross-holdings — 13F unverified).
 
 ---
+
+### 2c. Supporting Material Census
+
+#### 2c.1 Documentation files
+
+Seven Markdown documentation files exist in trunk:
+
+| Path | Lines | Audience | Last modified |
+|---|---:|---|---|
+| `README.md` | 99 | New harness user / external | initial harness commit (~10 hours pre-audit start) |
+| `CLAUDE.md` | 145 | Autonomous Claude session | initial harness commit |
+| `CHANGELOG.md` | 972 | All sessions; archival | per-PR (newest entry: 2026-05-15, PR #17) |
+| `TODO.md` | 98 | Next session pickup | per-PR (current Now: max_entropy) |
+| `docs/CLAIM_WEB_PROJECT_PLAN.md` | 1,420 | Authoritative methodology | initial harness commit |
+| `docs/PHASE_GATES.md` | 114 | Phase-transition checkpoints | initial harness commit (STALE — see F3) |
+| `docs/REGULATORY_ARBITRAGE.md` | 348 | Methodology framing background | initial harness commit |
+
+**Missing-from-trunk references (matches Phase 1 F4):**
+- `docs/METHODOLOGY.md` — referenced in PHASE_GATES.md L33 and TODO.md L29 Backlog as a Phase 1 deliverable; does not exist.
+- `docs/validation/` — referenced in PHASE_GATES.md L49-51 (Phase 2 retrodiction reports); not created (no Phase 2 work shipped yet).
+- `docs/reviews/` — referenced in PHASE_GATES.md L76-78 (Phase 4 external reviews); not created (Phase 4 is months 19-24 — far out of scope).
+
+The CHANGELOG and TODO are the two living documents updated by the autonomous loop. The other five are write-once at harness time.
+
+#### 2c.2 Configuration files
+
+- **`pyproject.toml`** (97 lines): declares the §19 dependency stack. Core scientific: `numpy ≥ 2.1`, `scipy ≥ 1.14`, `pandas ≥ 2.2`, `networkx ≥ 3.4`, `cvxpy ≥ 1.5`, `pyarrow ≥ 18.0`. Statistical: `statsmodels`, `scikit-learn`. Plotting: `matplotlib`, `plotly`, `pyvis`. Acquisition: `httpx`, `requests`, `beautifulsoup4`, `pdfplumber`, `tabula-py`, `lxml`. Property testing: `hypothesis`. Dev: `pytest`, `ruff`, `mypy`. Optional `test` and `dev` groups. Pytest markers `slow`, `integration`, `validation` declared. Ruff config selects E/F/W/I/N/UP/B/C4/SIM; ignores E501 (line length). Mypy strict_equality + warn_return_any.
+
+  Cross-reference against fetcher imports: all imports (`httpx`, `pdfplumber`, `lxml`, `beautifulsoup4`, `csv` builtin, `zipfile` builtin) are satisfied by declared dependencies. Constraint modules import only from `decimal` and `claimweb.fetchers.base` — no external deps. **No undeclared dependencies found.**
+
+- **`uv.lock`** (447,603 bytes): full lock for the dependency graph. Not read in detail; absence of any "lock-file out of sync" message in CHANGELOG suggests it tracks pyproject.toml.
+
+- **`.gitignore`** (~40 lines): excludes `__pycache__/`, `.pytest_cache/`, `.venv/`, `.mypy_cache/`, etc. Critically excludes `data/raw/*` except `.gitkeep` (per project plan §47 — content-addressed archive) and `data/output/network/*/v*/` except `v0/` placeholder (reproducible outputs not committed). Excludes `.claude/session-log/` (large, low-value) per CLAUDE.md. Excludes stop-hook scratch files (`claimweb_stop_counter_*`, `claimweb_pycompile_err`, etc.). No issues found.
+
+- **`install.sh`** (6,894 bytes): not deeply analyzed; per README §Installation it sets up hook dependencies and verifies environment.
+
+#### 2c.3 Harness (`.claude/`)
+
+The `.claude/` tree is the autonomous-mode operating environment per README §How the harness works. 24 files total:
+
+**Agents (5).** Each is a Markdown file with YAML frontmatter declaring `name`, `description`, `tools`, `maxTurns`, optional `permissionMode`. The five agents and their roles:
+
+| Agent | Tools | maxTurns | Role |
+|---|---|---:|---|
+| `data-source-investigator` | Bash, WebFetch, WebSearch, Read, Grep, Glob | 30 | Characterize external data source before fetcher implementation |
+| `documentation-curator` | Read, Write, Edit, Grep, Glob, Bash | 30 | Sync `docs/` with implementation (NEVER INVOKED per F6) |
+| `literature-checker` | WebFetch, WebSearch, Read, Grep | 25 | Verify methodology matches cited paper (NEVER COMPLETED per F6) |
+| `network-solver-debugger` | Bash, Read, Grep, Glob | 35 | Debug ME/MD reconstruction failures (Phase 1 reconstruction prerequisite) |
+| `retrodiction-replayer` | Bash, Read, Grep, Glob | 40 | Run a historical episode end-to-end (Phase 3) |
+
+Cross-reference: every agent is referenced by at least one skill file (e.g., `fetcher-author/SKILL.md` references `data-source-investigator`; `reconstruction-author` and `cascade-author` reference `literature-checker`; `phase-gate-closer` references `documentation-curator`).
+
+**Slash commands (5).** `claimweb-bootstrap` (initial run), `claimweb-loop` (Ralph-style autonomous loop), `claimweb-next` (pick up TODO Now), `claimweb-status` (state report), `claimweb-validate` (run validation suite). All five are documented in CLAUDE.md.
+
+**Skills (9 directories, one SKILL.md each).** Each is auto-loaded by description match per CLAUDE.md authoring conventions. The set covers the Phase 1–3 implementation surfaces: `fetcher-author`, `constraint-author`, `reconstruction-author`, `cascade-author`, `abm-author`, `validation-author`, `visualization-author`, `phase-gate-closer`, `methodology-amendment`. Every skill maps to a project-plan section or a phase-gate criterion.
+
+**Rules (4).** Loadable per-topic rules: `conservation-laws.md`, `data-quality-flags.md`, `decimal-arithmetic.md`, `git-discipline.md`. These appear as system reminders when files in the relevant area are touched (the audit observed this: the `data-quality-flags.md` and `decimal-arithmetic.md` rules loaded when this audit read fetcher source files). All four are well-formed and consistent with the project plan.
+
+**`settings.json`** (sole config): registers six hook events:
+- `SessionStart` → `scripts/session_start_context.sh` (prints branch + Now item + recent CHANGELOG; the audit-start hook fired with this content)
+- `UserPromptSubmit` → `scripts/inject_state.sh`
+- `PreToolUse` (matcher `Bash`) → `scripts/guard_bash.sh` (blocks force-push, hard-reset per `git-discipline.md`)
+- `PreToolUse` (matcher `Write|Edit|MultiEdit`) → `scripts/guard_no_paid_aggregator.sh` (blocks paid-aggregator imports per origin-data-only rule)
+- `PostToolUse` (matcher `Write|Edit|MultiEdit`) → `scripts/post_edit_check.sh` (probably runs check_conservation, check_data_sources, py_compile)
+- `Stop` → `scripts/stop_review.sh` (probably enforces commit-before-stop per git-discipline)
+- `PreCompact` → `scripts/precompact_preserve.sh` (probably stashes session context before context compaction)
+
+This is six hook events, all wired. The settings.json structure is well-formed.
+
+#### 2c.4 Workflows
+
+`.github/workflows/claimweb-gate.yml` (61 lines): single CI workflow on `pull_request` to `main` and `push` to `main`. Steps:
+1. Checkout (fetch-depth 0)
+2. setup-python 3.12
+3. `pip install -e ".[dev]"` + auxiliary tools (pytest, hypothesis, ruff, jq)
+4. `chmod +x scripts/*.sh`
+5. Run `bash scripts/precommit_gate.sh` (continue-on-error: false → red fails the PR)
+6. On PR success: `gh pr merge --auto --squash --delete-branch` — this is the auto-merge mechanism CLAUDE.md describes.
+
+This is the only workflow. There is no separate workflow for nightly fetch-validation against live sources, no scheduled retrodiction run, no Zenodo deposit step. All of those would be Phase 3+ scope; absence is expected.
+
+#### 2c.5 Scripts
+
+12 scripts under `scripts/`:
+
+| Script | Lines | Role |
+|---|---:|---|
+| `check_conservation.py` | 85 | PostToolUse oracle for Laws 1–4 on emitted networks (per CLAUDE.md) |
+| `check_data_sources.sh` | 62 | Grep new files for forbidden paid-aggregator imports/URLs |
+| `guard_bash.sh` | 60 | Block force-push and hard-reset per `.claude/rules/git-discipline.md` |
+| `guard_no_paid_aggregator.sh` | 57 | PreToolUse paid-aggregator-import block on Write/Edit |
+| `inject_state.sh` | 32 | UserPromptSubmit context-injection (probably current Now item) |
+| `post_edit_check.sh` | 81 | PostToolUse multi-check (py_compile + check_data_sources + check_conservation) |
+| `precommit_gate.sh` | 155 | Full gate: ruff + pytest + conservation check; runs in CI per workflow |
+| `precompact_preserve.sh` | 46 | PreCompact stash of context |
+| `session_end_log.sh` | 58 | Session log append |
+| `session_start_context.sh` | 56 | SessionStart context (CHANGELOG + TODO + PHASE_GATES preview) |
+| `setup.sh` | 81 | One-time install hook dependencies |
+| `stop_review.sh` | 86 | Stop hook: enforce commit-before-stop |
+
+`scripts/check_conservation.py` is the only Python script — the operational guard for Laws 1–4 invoked on every PostToolUse on `claimweb/` and `data/output/`. Its behavior was not deeply analyzed in this phase; it gets a closer reading in Phase 7a.
+
+#### 2c.6 Data placeholders and notebooks
+
+`data/raw/.gitkeep`, `data/normalized/.gitkeep`, `data/output/.gitkeep`, `notebooks/.gitkeep`. No accidentally-committed raw data files, no committed notebook output. Per the `.gitignore` rules, `data/raw/*` and `data/output/network/*/v*/` (except v0) are gitignored. The audit confirms zero leakage.
+
+#### 2c.7 Reference quarter 2024-Q4 — current cached state
+
+The audit checked `data/raw/` for any cached acquisition output. Result: directory contains only `.gitkeep`. **No fetcher has been run end-to-end against any live data source from this codebase's repository state.** This is consistent with the Phase 1 closure gap on the reference-quarter criterion.
+
+---
+
+### 2. Phase 2 Summary
+
+- 47 production Python files (10 concrete fetchers + base + 5 constraint modules + 24 stubs across reconstruct/cascade/abm/visualize/validation/multiplier/normalize/api); 9,061 LOC total.
+- 16 unit test modules; 13,346 LOC; 1,095 `def test_` functions; 61 `@given` property tests. Test-count discrepancy with CHANGELOG resolved (parametrize expands count at runtime).
+- 9 fixture directories with synthetic captured-slice data; no live-quarter snapshots.
+- 4 fetchers can acquire live (FHLB, FABS, Z.1, XBRL); 3 are unverified-but-real (13F, ADV, N-MFP); 2 are placeholder-URL (NAIC S, NAIC D).
+- 24 `.claude/` files (5 agents, 5 commands, 9 skills, 4 rules, settings.json); 1 GitHub Actions workflow; 12 scripts.
+- 7 docs files; METHODOLOGY.md is the one Phase 1-named document that does not exist.
+
+No orphan production files, no orphan tests, no orphan agents. Every committed file has a documented role. The single substantive defect surfaced in Phase 1 (Schedule S arc-direction inversion) propagates into Phase 2's arc-emission ground truth and motivates Stage 3 of the remediation plan.
+
+---
