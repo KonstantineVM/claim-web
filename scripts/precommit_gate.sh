@@ -35,7 +35,7 @@ section() { printf "\n=== %s ===\n" "$1"; }
 # 1. pytest, fast tests first.
 section "pytest (unit + smoke)"
 if command -v pytest >/dev/null 2>&1 && [ -d tests/ ]; then
-    if pytest tests/ -x -q --ignore=tests/validation 2>&1 | tail -40; then
+    if pytest tests/ -x -q --ignore=tests/validation -m "not integration" 2>&1 | tail -40; then
         green "pytest unit/smoke: PASS"
     else
         red "pytest unit/smoke: FAIL — fatal"

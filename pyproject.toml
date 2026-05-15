@@ -69,6 +69,7 @@ testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 markers = [
     "slow: tests that take longer than 5 seconds",
+    "integration: tests that hit real external data sources (excluded from fast suite)",
     "validation: historical-retrodiction episode tests (project plan §17)",
 ]
 

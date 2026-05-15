@@ -24,6 +24,66 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: FhlbCombinedFetcher (project plan §10.4)
+
+- **What:** Implemented `claimweb/fetchers/fhlb_combined.py` — the FHLB Office
+  of Finance Combined Financial Report fetcher.  Created:
+  - `FhlbCombinedFetcher(BaseFetcher)` — full fetcher class with all four
+    required methods: `list_available_periods`, `acquire`, `parse`, `validate`.
+  - `parse()` extracts two categories of A3 arcs from the PDF:
+    (1) a system-wide insurance-member aggregate from the "ADVANCES OUTSTANDING
+    BY MEMBER TYPE" table (amounts in billions, converted to millions); and
+    (2) individual named-insurer arcs from the "TOP TEN ADVANCE USERS" table
+    (amounts already in millions).
+  - Entity-name → canonical node-ID mapping for ~40 major U.S. life insurer
+    legal entities.  Unknown names go to `claimweb/registry/unmapped/` for
+    human review rather than being silently dropped.
+  - Arc direction: source = insurer (borrower/liability side), target = fhlb:system
+    (lender/asset side), consistent with `x_{ij}^k` convention in project plan §1.
+  - `validate()` checks: presence of the insurance aggregate, plausibility of
+    the aggregate amount, and that the sum of named-member arcs ≤ the aggregate.
+  - `list_available_periods()` and `acquire()` scrape the FHLB-OF index page to
+    enumerate and download quarterly PDFs, with local caching by SHA-256.
+  Created `tests/fixtures/fhlb_combined/generate_fixture.py` — a standalone
+  script that generates a minimal but pdfplumber-readable PDF fixture capturing
+  the key tables of the 2024-Q4 Combined Financial Report.  The fixture is
+  committed as `tests/fixtures/fhlb_combined/2024-Q4-combined-financial-report.pdf`.
+  Created `tests/unit/test_fhlb_combined.py` with 44 unit tests and 2 integration
+  tests (marked `@pytest.mark.integration`; excluded from the fast suite):
+  - `TestLabelToPeriod`: 13 tests across all quarter-label formats
+  - `TestCanonicalizeMemberName`: known names, case insensitivity, unmapped
+  - `TestSlug`: truncation, special chars, unicode
+  - `TestFhlbCombinedFetcherParse`: 14 tests — aggregate arc, named arcs,
+    dollar amounts, ArcClass, DataQualityFlag, provenance, SHA-256 matching
+  - `TestFhlbCombinedFetcherValidate`: 5 tests — clean path, NO_FACTS,
+    MISSING_AGGREGATE, NAMED_EXCEEDS_AGGREGATE, LOW_INSURANCE_TOTAL
+  - `TestFhlbCombinedFetcherRun`: convenience method round-trip
+  - `TestFhlbCombinedFetcherProperties`: round-trip via to_dict/from_dict
+  Also: added `integration` pytest marker to `pyproject.toml`; updated
+  `scripts/precommit_gate.sh` to exclude integration tests from the fast suite
+  (`-m "not integration"`).
+- **Why:** Phase 1 gate criterion: `FhlbCombinedFetcher` implemented end-to-end
+  with unit tests on a captured fixture (per `docs/PHASE_GATES.md`). This is the
+  "first fetcher" called out in project plan §35 as the Week 1 action item.
+  Spawned the `data-source-investigator` subagent first as required by the
+  fetcher-author skill; it confirmed the URL pattern and PDF structure.
+- **Result:** 165 tests pass (121 pre-existing + 44 new); ruff clean; precommit
+  gate green. `claimweb.fetchers.fhlb_combined` importable; `FhlbCombinedFetcher`
+  exported at `claimweb.fetchers` level (via `__init__.py` update needed — see
+  below). Parse output on fixture: 1 aggregate arc (89,700 M USD for insurance
+  members) + 5 named-insurer arcs; validation is clean.
+- **Failed:** Two regex bugs found during testing and fixed:
+  (1) `_MEMBER_ROW_RE` used `\s{2,}` (required 2+ spaces), but pdfplumber
+  collapses multiple spaces in a BT/Tj text stream to single spaces — changed to
+  `\s+`. (2) `_QUARTER_LABEL_RE` had `31` hardcoded for month-day, but June and
+  September quarters end on the 30th — changed to `\d{1,2}`.
+  The uv-managed pytest tool environment needed `httpx`, `pdfplumber`,
+  `beautifulsoup4`, and `lxml` added (same one-time environment issue as previous
+  session; same fix: `uv tool install pytest --with ...`).
+- **Next:** `claimweb.constraints.kcl` — balance-sheet identity (Law 1) checker.
+  Per project plan §1.1 and `constraint-author` skill. Property-based tests
+  verifying soundness, completeness, stability, independence.
+
 ### 2026-05-15 — fetcher: BaseFetcher abstraction and ArcFact schema
 
 - **What:** Implemented `claimweb/fetchers/base.py` — the foundational
