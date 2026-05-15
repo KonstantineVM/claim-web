@@ -45,6 +45,7 @@ dependencies = [
     "pdfplumber>=0.11,<0.12",
     "tabula-py>=2.10,<3",
     "lxml>=5.3,<7",
+    "hypothesis>=6.152.7",
 ]
 
 [project.optional-dependencies]
