@@ -24,6 +24,81 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: NAIC Schedule S reinsurance cessions
+
+- **What:** Implemented `claimweb/fetchers/naic_schedule_s.py` — the
+  `NaicScheduleSFetcher` for NAIC Schedule S reinsurance cession data
+  (project plan §10.3). Full public interface matches `BaseFetcher` contract:
+  - `list_available_periods()` — scans `data/raw/naic_schedule_s/` for
+    cached period directories; filters to Q4-only (NAIC annual cadence);
+    returns sorted list.
+  - `acquire(period)` — checks cache at
+    `data/raw/naic_schedule_s/{period}/schedule_s.csv`; raises `RuntimeError`
+    with clear acquisition instructions if not cached. Period must be Q4.
+  - `parse(handle)` — reads the canonical CLAIM-WEB Schedule S CSV (one row
+    per cedent-reinsurer pair, amounts in $000); emits one A6 ArcFact per row
+    with non-zero total. Arc direction: source = reinsurer (obligor), target =
+    cedent (creditor holding the reinsurance recoverable). Converts $000 →
+    millions USD via `_THOUSANDS_TO_MILLIONS = Decimal("0.001")`.
+  - `validate(facts)` — checks arc class (A6), non-negative amounts, stock_eop
+    basis; warns if no offshore-domicile arcs detected; surfaces absence of
+    known PE-affiliated cedents (Athene 68039, Global Atlantic 97071, F&G
+    63177, AEL 92487, Talcott 88072) as info.
+  Key design decisions:
+  - **Arc type**: `ArcClass.A6` (reinsurance treaties, offshore-cession) for
+    all Schedule S Part 3 cessions (both domestic and offshore).
+  - **Arc direction**: source = reinsurer, target = cedent. The reinsurer is
+    the obligor (issuer of the reinsurance liability); the cedent holds the
+    reinsurance recoverable as an asset. Consistent with the project-wide
+    source=obligor, target=creditor convention.
+  - **Dollar amount**: sum of all ceded instrument types (life + A&H + annuity
+    + other) from the CSV's $000 columns, converted to millions.
+  - **Cadence**: Annual only; `acquire()` enforces Q4-period constraint to
+    prevent misuse with non-year-end periods.
+  - **No free central API**: NAIC filings are per-state. The fetcher reads
+    from cached data and provides detailed acquisition guidance in the module
+    docstring and RuntimeError messages. Spawn data-source-investigator
+    confirmed no stable free central API exists.
+  - **Offshore domicile detection**: `_OFFSHORE_DOMICILES` frozenset covers
+    BM, KY, IE, LU, VG, BS, BB, TC, GG, JE, IM, MT, JP, CH, FR, GB. CA and
+    DE deliberately excluded (collision with CA=California/DE=Delaware NAIC
+    state codes; ISO-3 expansion deferred to a future revision).
+  - **PE-affiliated cedent tracking**: `_PE_AFFILIATED_CEDENT_CODES` covers
+    Athene (68039), Global Atlantic (97071), F&G (63177), AEL (92487), and
+    Talcott (88072); absence surfaces as info in validate().
+  Helper functions: `_normalise_name`, `_cedent_node_id`, `_reinsurer_node_id`,
+  `_parse_amount_thousands`, `_parse_schedule_s_csv`.
+  Fixture: `tests/fixtures/naic_schedule_s/schedule_s_2023q4.csv` (8 rows:
+  Athene, Global Atlantic, F&G, MetLife; mix of offshore Bermuda/Cayman and
+  domestic reinsurers; realistic amounts in $000).
+  Test file: `tests/unit/test_naic_schedule_s.py` — 99 tests (3 property-based
+  via hypothesis: schema compliance, name-slug stability, amount non-negativity);
+  976 total passing; gate green.
+- **Why:** Phase 1 fetcher coverage (project plan §10.3). NAIC Schedule S is
+  the primary data source for A6 arcs (offshore reinsurance cessions) and T2
+  node identification. This is the critical arc for quantifying Channel E
+  (offshore reinsurance) in the regulatory-arbitrage circuit. The closed-loop
+  structures (Apollo→Athene→Athene Life Re→Apollo investments) depend on A6
+  arcs being populated before the claim-multiplier calculation.
+- **Result:** `claimweb/fetchers/naic_schedule_s.py`,
+  `tests/fixtures/naic_schedule_s/schedule_s_2023q4.csv`,
+  `tests/fixtures/naic_schedule_s/__init__.py`,
+  `tests/unit/test_naic_schedule_s.py`.
+- **Failed:** (1) Data-source-investigator agent launched but did not produce a
+  usable summary in its final output (ran 82 tool uses over 6.5 minutes before
+  completing with a partial trace); implementation proceeded from project plan
+  §10.3, existing knowledge of NAIC filing structure, and public documentation.
+  (2) `CA` (Canada/California ambiguity) and `DE` (Germany/Delaware ambiguity)
+  initially included in `_OFFSHORE_DOMICILES`; removed when test caught the
+  collision with U.S. state abbreviations used in NAIC domicile fields.
+  (3) Early tests used `patch("claimweb.fetchers.naic_schedule_s.Path")` with
+  lambda side-effects, which did not intercept the `/` operator on Path objects;
+  fixed by using `monkeypatch.chdir(tmp_path)` pattern (consistent with how
+  test_sec_adv.py handles this).
+- **Next:** `claimweb.fetchers.naic_schedule_d` (NAIC Schedule D
+  security-by-security holdings); then `sec_13f` (SEC Form 13F); then the
+  reconstruction solvers.
+
 ### 2026-05-15 — fetcher: SEC Form ADV investment adviser registrations
 
 - **What:** Implemented `claimweb/fetchers/sec_adv.py` — the `SecAdvFetcher`

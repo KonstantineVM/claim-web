@@ -1,0 +1,9 @@
+period,cedent_name,cedent_naic_code,reinsurer_name,reinsurer_naic_code,reinsurer_domicile,authorized_flag,amount_life_000,amount_anh_000,amount_annuity_000,amount_other_000
+2023-Q4,Athene Annuity and Life Insurance Company,68039,Athene Life Re Ltd,,BM,Certified,0,0,5000000,0
+2023-Q4,Athene Annuity and Life Insurance Company,68039,General American Life Insurance Company,72303,MO,Authorized,0,0,500000,0
+2023-Q4,Global Atlantic Life Insurance Company,97071,Commonwealth Annuity and Life Insurance Company,84824,NY,Authorized,0,0,2500000,0
+2023-Q4,Global Atlantic Life Insurance Company,97071,Global Atlantic Re Limited,,BM,Certified,1200000,0,3000000,0
+2023-Q4,Fidelity and Guaranty Life Insurance Company,63177,Hannover Life Reassurance Company of America,65536,FL,Authorized,0,100000,1500000,0
+2023-Q4,Fidelity and Guaranty Life Insurance Company,63177,FGL Re Insurance Ltd,,KY,Certified,0,0,2000000,0
+2023-Q4,Metropolitan Life Insurance Company,65978,MetLife Reinsurance Company of Charleston,69574,SC,Authorized,5000000,500000,0,100000
+2023-Q4,Metropolitan Life Insurance Company,65978,MetLife Insurance K.K.,,JP,Authorized,2500000,0,0,0
