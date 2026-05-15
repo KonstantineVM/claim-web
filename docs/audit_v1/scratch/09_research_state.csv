@@ -1,0 +1,61 @@
+path,research_state_label,justification,inbound_imports,outbound_side_effects
+claimweb/__init__.py,LIVE-LOAD-BEARING,Sets Decimal precision globally per .claude/rules/decimal-arithmetic.md; required for all dollar arithmetic to be Decimal-correct,"every claimweb module",sets decimal.getcontext
+claimweb/fetchers/base.py,LIVE-LOAD-BEARING,Defines ArcFact + DataQualityFlag + BaseFetcher ABC; every fetcher and every downstream constraint module depends on these types,"every concrete fetcher; every test; many constraint modules",none (pure types)
+claimweb/fetchers/fhlb_combined.py,LIVE-PARSING-COMPLETE,Real URL validated by subagent during PR #3; parses fixture cleanly with 35 tests; can plausibly be promoted to LIVE-LOAD-BEARING after live-data validation,test_fhlb_combined; fetchers.__init__,httpx GET; PDF parse; filesystem cache write
+claimweb/fetchers/frb_efa_fabs.py,LIVE-PARSING-COMPLETE,Real URL; subagent validated FABCP-quarterly-only edge case; 77 tests pass on fixture,test_frb_efa_fabs; fetchers.__init__,httpx GET; CSV parse; filesystem cache write
+claimweb/fetchers/naic_schedule_d.py,LIVE-PARSING-PLACEHOLDER-ACQUISITION,Iowa IID and NAIC CIS URLs are placeholders per CHANGELOG L122-123; parses fixture cleanly with 146 tests; cannot fetch from live NAIC source without rework,test_naic_schedule_d; fetchers.__init__,httpx GET (against placeholder URLs); CSV parse; filesystem cache write; registry write
+claimweb/fetchers/naic_schedule_s.py,LIVE-PARSING-PLACEHOLDER-ACQUISITION,Same as schedule_d. Subagent ran out of turns; URLs are documentation-derived approximations. **Notable: arc direction matches kcl.py convention (Reading A); the OTHER 9 fetchers do not.**,test_naic_schedule_s; fetchers.__init__,httpx GET (against placeholder URLs); CSV parse; filesystem cache write; registry write
+claimweb/fetchers/sec_13f.py,LIVE-PARSING-UNVERIFIED,EDGAR URLs are real (data.sec.gov/submissions/...); subagent could not reach EDGAR from sandbox; 114 tests pass on fixture; **arc-direction follows Reading B — disagrees with kcl.py**,test_sec_13f; fetchers.__init__,httpx GET (real SEC endpoints); XML parse; filesystem cache write; registry write
+claimweb/fetchers/sec_adv.py,LIVE-PARSING-UNVERIFIED,IAPD URLs real; subagent ran out of turns; 96 tests on fixture; G3 ownership-arc direction question pending (Phase 3c.2),test_sec_adv; fetchers.__init__,httpx GET; ZIP extract; CSV parse; filesystem cache
+claimweb/fetchers/sec_nmfp.py,LIVE-PARSING-UNVERIFIED,EDGAR EFTS + submissions URLs real; subagent unable to fetch due to network restrictions; 125 tests on fixture; **arc-direction Reading B**,test_sec_nmfp; fetchers.__init__,httpx GET; XML parse; filesystem cache
+claimweb/fetchers/sec_xbrl.py,LIVE-PARSING-COMPLETE,companyfacts URL well-established; no live-data flag raised in CHANGELOG; 66 tests on MetLife fixture; **arc-direction Reading B**,test_sec_xbrl; fetchers.__init__,httpx GET; JSON parse; filesystem cache
+claimweb/fetchers/z1.py,LIVE-PARSING-COMPLETE,FRB DDP URL well-established; 56 tests on 7-table fixture set; **arc-direction Reading B**,test_z1; fetchers.__init__,httpx GET; CSV parse; filesystem cache
+claimweb/constraints/kcl.py,LIVE-LOAD-BEARING,"Defines ArcKey, LinearConstraint, ConstraintSet, NetworkState, NodeBalance shared types; implements Law 1 + uses Reading A (src=holder) convention",test_kcl; double_entry; flow_funds; sectoral; compile,none
+claimweb/constraints/double_entry.py,LIVE-LOAD-BEARING,Law 2 build/check; convention-agnostic (instrument-level conservation),test_double_entry; compile,none
+claimweb/constraints/sectoral.py,LIVE-LOAD-BEARING,Law 3 build/check; uses Reading A convention (sums outgoing arcs from sector nodes = sector assets),test_sectoral; compile,none
+claimweb/constraints/flow_funds.py,LIVE-LOAD-BEARING,Law 4 build/check; cross-period; convention-agnostic on direction (uses ArcKey identity across periods),test_flow_funds; compile,none
+claimweb/constraints/compile.py,LIVE-LOAD-BEARING,Assembles all four laws into CompiledSystem consumed by reconstruct.solver,test_compile; (will be used by reconstruct.solver),none
+claimweb/constraints/prior.py,STUB-WAITING-IMPLEMENTATION,13-LOC docstring stub; planned Phase 1 work for soft constraints; not blocking any current criterion,none yet,none
+claimweb/reconstruct/max_entropy.py,STUB-WAITING-IMPLEMENTATION,21-LOC stub; TODO.md Now item; blocked on literature-checker spawn,none yet,none
+claimweb/reconstruct/min_density.py,STUB-WAITING-IMPLEMENTATION,18-LOC stub; PHASE_GATES.md L29 deliverable,none yet,none
+claimweb/reconstruct/solver.py,STUB-WAITING-IMPLEMENTATION,20-LOC stub; bracketing harness; PHASE_GATES.md L30,none yet,none
+claimweb/reconstruct/validate.py,STUB-WAITING-IMPLEMENTATION,15-LOC stub; reconstruction self-validate,none yet,none
+claimweb/reconstruct/__init__.py,STUB-WAITING-IMPLEMENTATION,14-LOC subpackage init,none yet,none
+claimweb/cascade/eisenberg_noe.py,PARKED-AWAITING-DEPENDENCY,25-LOC stub; Phase 2 deliverable; awaits Phase 1 reconstruction completion,none yet,none
+claimweb/cascade/fire_sale.py,PARKED-AWAITING-DEPENDENCY,23-LOC stub; Phase 2,none yet,none
+claimweb/cascade/multi_constraint.py,PARKED-AWAITING-DEPENDENCY,17-LOC stub; Phase 2,none yet,none
+claimweb/cascade/contingent.py,PARKED-AWAITING-DEPENDENCY,16-LOC stub; Phase 2,none yet,none
+claimweb/cascade/debtrank.py,PARKED-AWAITING-DEPENDENCY,16-LOC stub; Phase 2,none yet,none
+claimweb/cascade/__init__.py,PARKED-AWAITING-DEPENDENCY,18-LOC subpackage init,none yet,none
+claimweb/abm/simulator.py,PARKED-AWAITING-DEPENDENCY,19-LOC stub; Phase 3 (parallel ABM per project plan Part XII),none yet,none
+claimweb/abm/calibration.py,PARKED-AWAITING-DEPENDENCY,16-LOC stub; Phase 3,none yet,none
+claimweb/abm/scenarios.py,PARKED-AWAITING-DEPENDENCY,16-LOC stub; Phase 3,none yet,none
+claimweb/abm/__init__.py,PARKED-AWAITING-DEPENDENCY,19-LOC subpackage init,none yet,none
+claimweb/abm/agents/__init__.py,PARKED-AWAITING-DEPENDENCY,1-LOC placeholder,none yet,none
+claimweb/visualize/sankey.py,STUB-WAITING-IMPLEMENTATION,17-LOC stub; PHASE_GATES.md L32 Phase 1 deliverable,none yet,none
+claimweb/visualize/network_link.py,PARKED-AWAITING-DEPENDENCY,11-LOC stub; Phase 3,none yet,none
+claimweb/visualize/cascade_dag.py,PARKED-AWAITING-DEPENDENCY,11-LOC stub; Phase 3 (depends on cascade),none yet,none
+claimweb/visualize/multiplier_timeseries.py,PARKED-AWAITING-DEPENDENCY,11-LOC stub; Phase 3,none yet,none
+claimweb/visualize/__init__.py,PARKED-AWAITING-DEPENDENCY,14-LOC,none yet,none
+claimweb/validation/ep1_2007_xfabs.py,PARKED-AWAITING-DEPENDENCY,12-LOC stub; Phase 3 deliverable; awaits Phase 1+2 plus retrodiction-replayer agent invocation,none yet,none
+claimweb/validation/ep2_2008_aig_seclending.py,PARKED-AWAITING-DEPENDENCY,13-LOC stub; Phase 3,none yet,none
+claimweb/validation/ep3_2020_covid_stress.py,PARKED-AWAITING-DEPENDENCY,15-LOC stub; Phase 3,none yet,none
+claimweb/validation/__init__.py,PARKED-AWAITING-DEPENDENCY,14-LOC,none yet,none
+claimweb/multiplier/__init__.py,PARKED-AWAITING-DEPENDENCY,14-LOC; Phase 1-2 deliverable per project plan §14 claim-multiplier computation,none yet,none
+claimweb/normalize/__init__.py,PARKED-AWAITING-DEPENDENCY,17-LOC; intended layer between fetchers and constraints per §10/§11; not yet populated; redundancy with fetchers' direct emission of ArcFacts suggests this may be SCOPED-OUT in practice,none yet,none
+claimweb/api/__init__.py,PARKED-AWAITING-DEPENDENCY,12-LOC; Phase 3 web product backend (project plan §24),none yet,none
+claimweb/fetchers/__init__.py,LIVE-LOAD-BEARING,Re-exports concrete fetchers; consumed by external callers and tests,(external),none
+claimweb/constraints/__init__.py,LIVE-LOAD-BEARING,Re-exports law builders,(external),none
+tests/conftest.py,HARNESS,Empty shared-fixtures file; reserved,(pytest implicit),none
+tests/unit/test_*.py (16 files),DIAGNOSTIC-PERMANENT,Permanent regression suite for fetchers + constraints,(pytest collection),none
+scripts/check_conservation.py,DIAGNOSTIC-PERMANENT,Operational guard invoked on PostToolUse and in precommit gate,scripts/post_edit_check.sh; scripts/precommit_gate.sh,filesystem reads
+scripts/*.sh,HARNESS,Hook scripts wired by .claude/settings.json,(.claude/settings.json),various
+.claude/agents/*.md,HARNESS,Subagent definitions,(spawned by Claude),none (definitions)
+.claude/skills/*/SKILL.md,HARNESS,Auto-loaded workflow descriptions,(Claude auto-load),none
+.claude/commands/*.md,HARNESS,Slash command definitions,(user/agent invocation),none
+.claude/rules/*.md,HARNESS,Loadable per-topic rules,(Claude rule-match),none
+.claude/settings.json,HARNESS,Hook registration,(Claude session start),wires hooks
+pyproject.toml,LIVE-LOAD-BEARING,Project + dependency manifest,(build system; CI),none
+uv.lock,LIVE-LOAD-BEARING,Pinned dependency lock,(uv),none
+.gitignore,HARNESS,Gitignore rules,(git),none
+.github/workflows/claimweb-gate.yml,HARNESS,GitHub Actions CI workflow,(GH Actions),CI execution

@@ -1,0 +1,18 @@
+criterion_id,criterion_text_abbrev,current_status,evidence_file,evidence_line,blocking_dependencies
+G1.01,claimweb/ package skeleton exists with docstrings referencing project plan,CLOSED,claimweb/__init__.py and every subpackage __init__.py,—,none — PR #1
+G1.02,pyproject.toml exists with pinned §19 dependencies,CLOSED,pyproject.toml,L26-49,none — PR #1
+G1.03,tests/ exists with pytest --collect-only without error,CLOSED,tests/__init__.py + 16 test modules,—,none — PR #1
+G1.04,BaseFetcher abstraction in claimweb/fetchers/base.py implemented and unit-tested,CLOSED,claimweb/fetchers/base.py,L1-404 + test_fetchers_base.py 41 tests,none — PR #2
+G1.05,FhlbCombinedFetcher implemented end-to-end with unit tests on a captured fixture,CLOSED,claimweb/fetchers/fhlb_combined.py + tests/fixtures/fhlb_combined/2024-Q4-combined-financial-report.pdf,—,none — PR #3
+G1.06,Z1Fetcher implemented for tables L.116/L.121/L.207/L.208/L.211/L.226/L.227,CLOSED,claimweb/fetchers/z1.py + tests/fixtures/z1/L*.csv (7 tables),—,none — PR #5
+G1.07,SecXbrlFetcher implemented for LIFE_INSURERS panel,CLOSED,claimweb/fetchers/sec_xbrl.py + tests/fixtures/sec_xbrl/CIK0001099219.json,—,none — PR #7
+G1.08,FrbEfaFabsFetcher implemented for daily FABS dataset,CLOSED,claimweb/fetchers/frb_efa_fabs.py + tests/fixtures/frb_efa_fabs/fabs-chart-data-historical.txt,—,none — PR #11
+G1.09,Reference quarter 2024-Q4 acquired end-to-end (raw + normalized),OPEN,data/raw/ has only .gitkeep,—,"F1 arc-direction remediation (Stage 3); placeholder-URL remediation for NAIC S/D (Stage 3); live-API validation for SEC 13F/ADV/N-MFP (Stage 4); non-sandbox runner with network access"
+G1.10,All four conservation laws implemented with property-based hypothesis tests passing,NOMINAL,kcl.py/double_entry.py/sectoral.py/flow_funds.py — 5 property tests each,—,"F1 remediation is structurally orthogonal (test-pass status is not the issue); but the post-flip fetcher output must re-pass these tests; therefore tightly coupled to Stage 3"
+G1.11,ConstraintSet compile step implemented; produces feasible system on 2024-Q4 data,NOMINAL,claimweb/constraints/compile.py + test_compile.py 57 tests including soundness property,—,"Feasibility on actual 2024-Q4 data unverified (no fetcher has run live); add rank/conditioning check (Stage 5)"
+G1.12,Maximum-entropy reconstruction (claimweb.reconstruct.max_entropy) implemented + converges on 2024-Q4,OPEN,claimweb/reconstruct/max_entropy.py is a 21-LOC stub,—,"literature-checker subagent invocation; implementation (~3-5 days); 2024-Q4 acquisition (G1.09)"
+G1.13,Minimum-density reconstruction (claimweb.reconstruct.min_density) implemented + converges,OPEN,claimweb/reconstruct/min_density.py is an 18-LOC stub,—,"literature-checker against Anand-Craig-von Peter 2015; implementation; G1.09"
+G1.14,solver.py harness produces bracketed SolvedNetwork for 2024-Q4,OPEN,claimweb/reconstruct/solver.py is a 20-LOC stub,—,G1.12 + G1.13
+G1.15,Conservation-law checker verifies all 4 laws hold on 2024-Q4 solution,OPEN,scripts/check_conservation.py exists but no solved network exists,—,G1.09 + G1.14 + F1 remediation (otherwise checker will report violations on every Schedule D / 13F / FHLB / Z.1 / XBRL / etc. arc)
+G1.16,Initial Sankey visualization for 2024-Q4 published as static HTML,OPEN,claimweb/visualize/sankey.py is a 17-LOC stub,—,G1.14
+G1.17,Methodology paper outline drafted in docs/METHODOLOGY.md (Phase 1 sections only),OPEN,docs/METHODOLOGY.md does not exist,—,"documentation-curator agent invocation; or manual drafting (1 day)"
