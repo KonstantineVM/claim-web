@@ -24,6 +24,17 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — infra: track claimweb/registry/ package structure; gitignore runtime unmapped JSONs
+
+- **What:** Added `claimweb/registry/__init__.py` and `claimweb/registry/unmapped/.gitkeep`
+  to track the directory structure created at parse time by fetchers that write
+  unmapped entity registries.  Added `claimweb/registry/unmapped/*.json` to
+  `.gitignore` so runtime-generated files (e.g. `sec_13f_2024-Q4.json`) are not
+  accidentally committed.  Pattern mirrors `data/raw/*` / `.gitkeep` convention.
+- **Why:** Stop hook flagged untracked `claimweb/registry/` after `sec_13f` tests
+  generated the unmapped registry file.
+- **Next:** No change to fetcher logic.
+
 ### 2026-05-15 — fetcher: SEC Form 13F institutional holdings (A11/A12 arcs)
 
 - **What:** Implemented `claimweb/fetchers/sec_13f.py` — the `Sec13fFetcher` for

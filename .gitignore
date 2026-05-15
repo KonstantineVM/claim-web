@@ -27,6 +27,9 @@ claimweb_ruff_err
 claimweb_json_err
 claimweb_smoke
 
+# Unmapped entity registry (runtime-generated; not data, not code — human-review queue)
+claimweb/registry/unmapped/*.json
+
 # Raw data archive (content-addressed; archived separately per project plan §47)
 data/raw/*
 !data/raw/.gitkeep
