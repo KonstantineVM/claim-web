@@ -1017,3 +1017,88 @@ The audit ran four searches on the placeholder-URL and unverified-URL fetchers t
 - [SEC.gov — New EDGAR Rate Control Limits](https://www.sec.gov/filergroup/announcements-old/new-rate-control-limits)
 
 ---
+
+## Phase 9 — Phase 1 Gate Readiness Assessment
+
+`docs/audit_v1/scratch/11_phase1_gate_status.csv` is the row-by-row gate status. The 17 Phase 1 criteria from `docs/PHASE_GATES.md` L17-33:
+
+| # | Criterion (abbrev.) | Status | Evidence | Blocking |
+|---|---|---|---|---|
+| G1.01 | Package skeleton | **CLOSED** | every subpackage `__init__.py` with docstring | — |
+| G1.02 | `pyproject.toml` with §19 deps | **CLOSED** | `pyproject.toml:26-49` | — |
+| G1.03 | `tests/` with collect-only | **CLOSED** | 16 test modules collect cleanly | — |
+| G1.04 | `BaseFetcher` + unit-tested | **CLOSED** | `base.py` + `test_fetchers_base.py` (41 tests) | — |
+| G1.05 | `FhlbCombinedFetcher` end-to-end + fixture | **CLOSED** | `fhlb_combined.py` + PDF fixture | — |
+| G1.06 | `Z1Fetcher` for 7 L.tables | **CLOSED** | `z1.py` + 7 fixture CSVs | — |
+| G1.07 | `SecXbrlFetcher` for LIFE_INSURERS panel | **CLOSED** | `sec_xbrl.py` + MetLife fixture | — |
+| G1.08 | `FrbEfaFabsFetcher` for daily FABS | **CLOSED** | `frb_efa_fabs.py` + fixture | — |
+| G1.09 | **Reference 2024-Q4 acquired end-to-end** | **OPEN** | `data/raw/` empty | F1; placeholder URLs; non-sandbox runner |
+| G1.10 | All 4 conservation laws + property tests | **NOMINAL** | 5 property tests each × 4 laws | F1 fetcher-flip → must re-pass |
+| G1.11 | `ConstraintSet` compile feasible on 2024-Q4 | **NOMINAL** | `compile.py` + 57 tests | rank/conditioning check (Stage 5); G1.09 |
+| G1.12 | `max_entropy` implemented + converges | **OPEN** | 21-LOC stub | `literature-checker`; G1.09 |
+| G1.13 | `min_density` implemented + converges | **OPEN** | 18-LOC stub | `literature-checker`; G1.09 |
+| G1.14 | `solver.py` bracketed `SolvedNetwork` | **OPEN** | 20-LOC stub | G1.12 + G1.13 |
+| G1.15 | Conservation checker on 2024-Q4 solution | **OPEN** | no solved network | G1.09 + G1.14 + F1 |
+| G1.16 | Initial Sankey for 2024-Q4 | **OPEN** | 17-LOC stub | G1.14 |
+| G1.17 | `docs/METHODOLOGY.md` outline | **OPEN** | file does not exist | `documentation-curator` or manual draft |
+
+**Status breakdown:**
+- **CLOSED: 8 of 17 (47%)** — all foundation criteria (G1.01-G1.08) excluding the reference quarter
+- **NOMINAL: 2 of 17 (12%)** — conservation laws and compile both pass fixture tests; closure depends on F1 fetcher-flip
+- **OPEN: 7 of 17 (41%)** — the entire reconstruction path (G1.12-G1.16), the reference quarter (G1.09), the conservation check (G1.15), and METHODOLOGY.md (G1.17)
+
+### 9.1 Critical-Path Bottleneck Analysis
+
+The dependency graph among OPEN criteria:
+
+```
+G1.09 (reference quarter end-to-end)
+  ├── requires: F1 remediation (Stage 3)
+  ├── requires: NAIC S/D placeholder-URL fix (Stage 3)
+  ├── requires: SEC 13F/ADV/N-MFP live validation (Stage 4)
+  └── requires: non-sandbox runner
+
+G1.12 (max_entropy) and G1.13 (min_density)
+  ├── require: literature-checker invocations (Stage 2)
+  └── require: G1.09 (to test convergence on real data)
+
+G1.14 (solver bracketing harness) — requires G1.12 + G1.13
+
+G1.15 (conservation checker on solved network)
+  ├── requires: G1.09 (so the network exists)
+  ├── requires: G1.14 (so the network is reconstructed)
+  └── requires: F1 (otherwise check fails)
+
+G1.16 (Sankey) — requires G1.14
+
+G1.17 (METHODOLOGY.md) — independent; drafted from project plan + CHANGELOG
+```
+
+**The critical-path bottleneck is G1.09 (reference 2024-Q4 acquired end-to-end).** It is the single open criterion that the most other criteria depend on (G1.12, G1.13, G1.14, G1.15). Closing G1.09 requires three remediations in sequence:
+
+1. **F1 arc-direction inversion** (Stage 3): flip 9 fetchers from src=issuer to src=holder per Reading A. Estimated: 2-3 days.
+2. **NAIC placeholder-URL replacement** (Stage 3): investigate Iowa IID + per-state portal alternatives; the Iowa RIU portal sunsets June 30 2026, **giving roughly 6 weeks**. Estimated: 3-5 days (if a path exists) or scope reduction.
+3. **SEC live validation** (Stage 4): run sec_13f, sec_adv, sec_nmfp from a network-enabled environment. Estimated: 1-2 days.
+
+Until G1.09 closes, the reconstruction work (G1.12-G1.14) cannot be validated against real data, the conservation checker (G1.15) cannot fire, and the Sankey visualization (G1.16) cannot render.
+
+The single off-critical-path item is G1.17 (METHODOLOGY.md) — it can be drafted in parallel with the critical-path work using existing materials.
+
+### 9.2 NOMINAL → CLOSED Conditions
+
+The two NOMINAL criteria (G1.10 conservation laws, G1.11 compile) currently pass against synthetic networks but cannot close until:
+
+- **G1.10**: F1-induced fetcher source/target flip is committed; tests are updated to confirm the same constraints satisfy KCL on flipped output; an end-to-end fetcher → compile → KCL → green-light test is added.
+- **G1.11**: rank/conditioning check is added to `CompiledSystem.summary()` (Stage 5); a synthetic small-network test verifies the compiled matrix is well-conditioned and has the expected rank.
+
+Both NOMINAL items become CLOSED as a side effect of completing G1.09 and Stage 5.
+
+### 9. Phase 9 Summary
+
+- 8 of 17 Phase 1 gate criteria are **functionally CLOSED** but **administratively still open in PHASE_GATES.md** (the checkbox drift documented in F3). Stage 1 of the remediation plan check-offs these.
+- 2 NOMINAL criteria close as a side effect of F1 remediation + Stage 5 rank-check.
+- 7 OPEN criteria form the active Phase 1 work. The **critical-path bottleneck is G1.09 (reference 2024-Q4 acquired end-to-end)**, which depends on F1, NAIC placeholder remediation, SEC live validation, and a non-sandbox runner.
+- **Independent item**: G1.17 (METHODOLOGY.md) — drafting can begin immediately.
+- **Hard deadline**: Iowa RIU portal sunsets June 30, 2026 — 6 weeks from audit start. Stage 3 of remediation must execute by then or accept a Schedule S scope reduction.
+
+---
