@@ -17,19 +17,19 @@ Claude does this without asking. The next session picks up the new Now.
 
 ## Now
 
-- **[fetcher]** Implement `claimweb.fetchers.base`: the `BaseFetcher` abstraction. Per `fetcher-author` skill. Must expose `acquire`, `parse`, `validate` methods and the `ArcFact` schema. Property-based tests via hypothesis.
+- **[fetcher]** Implement `claimweb.fetchers.fhlb_combined`: FHLB Office of Finance Combined Financial Report fetcher. Per project plan §10.4 and `fetcher-author` skill. Before writing code, spawn the `data-source-investigator` subagent to characterize the source. Unit test on a captured fixture under `tests/fixtures/fhlb_combined/`.
 
 ## Next
 
-1. **[fetcher]** Implement `claimweb.fetchers.fhlb_combined`: FHLB Office of Finance Combined Financial Report fetcher. Per project plan §10.4 and `fetcher-author` skill. Before writing code, spawn the `data-source-investigator` subagent to characterize the source. Unit test on a captured fixture under `tests/fixtures/fhlb_combined/`.
-2. **[constraints]** Implement `claimweb.constraints.kcl`: the balance-sheet identity (Law 1) checker. Per project plan §1.1 and `constraint-author` skill. Property-based tests verifying soundness, completeness, stability, independence.
-3. **[fetcher]** Implement `claimweb.fetchers.z1`: pull the FRB Z.1 quarterly release tables L.116, L.121, L.207, L.208, L.211, L.226, L.227. Per project plan §10.1. Provides Law 3 sectoral constraints.
-4. **[constraints]** Implement `claimweb.constraints.double_entry`: Law 2 checker. Per project plan §1.1 and `constraint-author` skill.
-5. **[fetcher]** Implement `claimweb.fetchers.sec_xbrl`: SEC companyfacts XBRL fetcher for the LIFE_INSURERS panel. Per project plan §10.2.
-6. **[constraints]** Implement `claimweb.constraints.sectoral`: Law 3 checker. Per project plan §1.1.
-7. **[constraints]** Implement `claimweb.constraints.flow_funds`: Law 4 checker. Per project plan §1.1.
-8. **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
-9. **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data.
+1. **[constraints]** Implement `claimweb.constraints.kcl`: the balance-sheet identity (Law 1) checker. Per project plan §1.1 and `constraint-author` skill. Property-based tests verifying soundness, completeness, stability, independence.
+2. **[fetcher]** Implement `claimweb.fetchers.z1`: pull the FRB Z.1 quarterly release tables L.116, L.121, L.207, L.208, L.211, L.226, L.227. Per project plan §10.1. Provides Law 3 sectoral constraints.
+3. **[constraints]** Implement `claimweb.constraints.double_entry`: Law 2 checker. Per project plan §1.1 and `constraint-author` skill.
+4. **[fetcher]** Implement `claimweb.fetchers.sec_xbrl`: SEC companyfacts XBRL fetcher for the LIFE_INSURERS panel. Per project plan §10.2.
+5. **[constraints]** Implement `claimweb.constraints.sectoral`: Law 3 checker. Per project plan §1.1.
+6. **[constraints]** Implement `claimweb.constraints.flow_funds`: Law 4 checker. Per project plan §1.1.
+7. **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
+8. **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data.
+9. **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
 
 ## Backlog
 
@@ -37,7 +37,6 @@ Claude does this without asking. The next session picks up the new Now.
 
 Per project plan §35 and `docs/PHASE_GATES.md`.
 
-- **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
 - **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
 - **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — most expensive fetcher; spawn `data-source-investigator` first
 - **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
@@ -71,6 +70,7 @@ Listed in `docs/PHASE_GATES.md`.
 
 <!-- Move completed items here. Keep ~30 days, prune monthly. -->
 
+- **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.base`: `BaseFetcher` ABC, `ArcFact` schema, `Period`, `ArcClass`, `DataQualityFlag`, `RawDataHandle`, `ValidationReport`. 48 new tests (unit + hypothesis property-based); 121 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "fetcher: BaseFetcher abstraction and ArcFact schema".
 - **[bootstrap]** 2026-05-15 — Initialized `claimweb/` Python package skeleton per project plan §18. `pyproject.toml` with §19 dependencies; every module has a docstring referencing its plan section; `tests/` collects and 73 smoke tests pass; precommit gate green. Also fixed a harness self-reference bug in `scripts/check_data_sources.sh` (enforcement scripts were matching their own pattern lists). See CHANGELOG 2026-05-15 entry.
 
 ## Blocked
