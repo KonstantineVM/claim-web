@@ -1,72 +1,72 @@
 # TODO — CLAIM-WEB
 
-Current-state task list. Read this at the start of every session. Update after every meaningful unit of work.
+Current-state task list. Read this at the start of every session.
 
-## How this file works
+## How this file works in autonomous mode
 
-- The top of the file is "Now" — the single next thing to work on.
-- "Next" is the small queue (3–5 items) of what comes after.
-- "Backlog" is everything else, grouped by phase from the project plan.
-- "Done" is a short rolling log of recently completed items (move from "Now" to "Done" as work finishes; prune monthly).
-- "Blocked" lists anything waiting on external input (user decision, data source change, etc.) with why.
+The top of the file is "Now" — the single next thing to work on. Each session:
 
-The `/claimweb-status` slash command reads this file and reports back; the `/claimweb-next` slash command picks up the "Now" item and begins work.
+1. Completes the current Now item.
+2. Moves the completed item to "Done" with the commit hash.
+3. Promotes the top "Next" item to "Now".
+4. Promotes a Backlog item to fill the Next slot.
+
+Claude does this without asking. The next session picks up the new Now.
 
 ---
 
 ## Now
 
-- **[bootstrap]** Initialize the repository structure: create `claimweb/` Python package skeleton (pyproject.toml, package directories per project plan §18), run `bash scripts/setup.sh`, verify hooks fire by making a trivial test edit.
+- **[bootstrap]** Initialize the repository structure: create `claimweb/` Python package skeleton (pyproject.toml, package directories per project plan §18 and the bootstrap slash command), run `bash scripts/setup.sh`, verify hooks fire by making a trivial test edit. Per `/claimweb-bootstrap` command instructions.
 
 ## Next
 
-1. **[fetcher]** Implement `claimweb.fetchers.fhlb_combined`: download the most recent FHLB Office of Finance Combined Financial Report, extract the structured tables (total advances, advance composition, member-type breakdown). Per project plan §10.4. Estimate: 1–2 sessions.
-2. **[constraints]** Implement `claimweb.constraints.kcl`: the balance-sheet identity checker with property-based tests via hypothesis. The function must accept a node's arc set and return (holds: bool, residual: float, diagnostic: dict). Per project plan §13 Phase A and §21. Estimate: 1 session.
-3. **[fetcher]** Implement `claimweb.fetchers.z1`: pull the FRB Z.1 quarterly release tables L.116, L.121, L.207, L.208, L.211, L.226, L.227. Provides Law 3 sectoral constraints. Per project plan §10.1. Estimate: 1–2 sessions.
-4. **[reconstruction]** First end-to-end single-arc reconstruction: FHLB → U.S. life insurer members for 2024-Q4, with conservation-law check and data-quality flag. This is the project plan's first-week-actions concrete deliverable.
+1. **[fetcher]** Implement `claimweb.fetchers.base`: the `BaseFetcher` abstraction. Per `fetcher-author` skill. Must expose `acquire`, `parse`, `validate` methods and the `ArcFact` schema. Property-based tests via hypothesis.
+2. **[fetcher]** Implement `claimweb.fetchers.fhlb_combined`: FHLB Office of Finance Combined Financial Report fetcher. Per project plan §10.4 and `fetcher-author` skill. Before writing code, spawn the `data-source-investigator` subagent to characterize the source. Unit test on a captured fixture under `tests/fixtures/fhlb_combined/`.
+3. **[constraints]** Implement `claimweb.constraints.kcl`: the balance-sheet identity (Law 1) checker. Per project plan §1.1 and `constraint-author` skill. Property-based tests verifying soundness, completeness, stability, independence.
+4. **[fetcher]** Implement `claimweb.fetchers.z1`: pull the FRB Z.1 quarterly release tables L.116, L.121, L.207, L.208, L.211, L.226, L.227. Per project plan §10.1. Provides Law 3 sectoral constraints.
+5. **[constraints]** Implement `claimweb.constraints.double_entry`: Law 2 checker. Per project plan §1.1 and `constraint-author` skill.
+6. **[fetcher]** Implement `claimweb.fetchers.sec_xbrl`: SEC companyfacts XBRL fetcher for the LIFE_INSURERS panel. Per project plan §10.2.
+7. **[constraints]** Implement `claimweb.constraints.sectoral`: Law 3 checker. Per project plan §1.1.
+8. **[constraints]** Implement `claimweb.constraints.flow_funds`: Law 4 checker. Per project plan §1.1.
+9. **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
 
 ## Backlog
 
 ### Phase 1 — Foundation (months 1–6)
 
-Per project plan §35.
+Per project plan §35 and `docs/PHASE_GATES.md`.
 
-- Finalize methodology document (extract from plan §1, expand with formal proofs of constraint-satisfiability)
-- Build remaining fetcher infrastructure for 2024-Q4 reference quarter end-to-end
-- Acquire data for 2024-Q4 end-to-end
-- Build network reconstruction (maximum-entropy and minimum-density both) for 2024-Q4
-- Verify Laws 1–4 hold on the reference quarter
-- Initial Sankey visualization for 2024-Q4
+- **[fetcher]** `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset (per project plan §10.9)
+- **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
+- **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
+- **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — most expensive fetcher; spawn `data-source-investigator` first
+- **[fetcher]** `claimweb.fetchers.naic_schedule_d`: NAIC Schedule D security-by-security
+- **[reconstruction]** `claimweb.reconstruct.max_entropy`: per project plan §13 Phase C; before writing code, spawn `literature-checker` against Upper (2004)
+- **[reconstruction]** `claimweb.reconstruct.min_density`: per project plan §13 Phase C; spawn `literature-checker` against Anand-Craig-von Peter (2015)
+- **[reconstruction]** `claimweb.reconstruct.solver`: the harness that runs both methods and brackets per project plan §13
+- **[infra]** Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers
+- **[infra]** 2024-Q4 reconstructed via both methods; output in `data/output/network/2024-Q4/v1/`
+- **[infra]** Conservation laws verified on 2024-Q4 reconstruction
+- **[visualize]** Initial Sankey visualization for 2024-Q4 — per `visualization-author` skill
+- **[docs]** Phase 1 sections of methodology paper drafted in `docs/METHODOLOGY.md`
+- **[phase-gate]** Close Phase 1 — use `phase-gate-closer` skill; this is a user-confirmation event
 
 ### Phase 2 — Historical reconstruction (months 7–12)
 
-- Extend fetchers backward to 2000-Q1
-- Solve the network at each quarterly period
-- Build the cascade simulator (Eisenberg-Noe core, then fire-sale extension, then multi-constraint binding)
-- Run baseline cascade scenarios for each period
-- First historical-retrodiction attempts (2007 XFABS, 2008 AIG, 2020 stress)
+Items in Phase 2 are deferred until Phase 1 is closed. Listed in `docs/PHASE_GATES.md`.
 
-### Phase 3 — Validation and methodology refinement (months 13–18)
+### Phase 3 — Validation (months 13–18)
 
-- Iterate on retrodictions until all three pass
-- Build the visualization layer (Sankey, node-link, cascade-DAG)
-- Build the interactive web product MVP
-- Draft the methodology paper
+Listed in `docs/PHASE_GATES.md`.
 
 ### Phase 4 — External review (months 19–24)
 
-- Pre-submission review by three external experts
-- Address review comments
-- Industry and regulator briefings
-- Submit to first-choice journal
+Listed in `docs/PHASE_GATES.md`.
 
-### Phase 5 — Publication and launch (months 25–30)
+### Phase 5 — Publication (months 25–30)
 
-- Peer-review rounds
-- Web product polish
-- Press launch
-- Open-source release
-- Conference presentations
+Listed in `docs/PHASE_GATES.md`.
 
 ## Done
 
@@ -74,13 +74,14 @@ Per project plan §35.
 
 ## Blocked
 
-<!-- Items waiting on user decision or external input. -->
+<!-- Items waiting on user decision or external input. Surface to user when an item here is the only remaining Now-eligible work. -->
 
 ---
 
 ## Conventions
 
-- Tag items with `[fetcher]`, `[constraints]`, `[reconstruction]`, `[cascade]`, `[validation]`, `[visualization]`, `[docs]`, `[infra]`, `[bootstrap]` for filtering.
-- Estimate is optional; if used, in sessions, not hours.
+- Tag items with `[bootstrap]`, `[fetcher]`, `[constraints]`, `[reconstruction]`, `[cascade]`, `[validation]`, `[visualization]`, `[abm]`, `[docs]`, `[infra]`, `[phase-gate]`.
+- Each item should reference the relevant project-plan section number and the relevant skill.
 - When moving an item to "Done", record the commit hash and the CHANGELOG entry that documents it.
-- Never delete a "Blocked" item — resolve it or move to "Done"/"Backlog" with a note.
+- When promoting Next to Now, also promote a Backlog item into the now-empty Next slot.
+- The Next queue is 5–9 items deep at all times.
