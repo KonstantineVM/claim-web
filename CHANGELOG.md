@@ -24,6 +24,88 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: SEC XBRL companyfacts for LIFE_INSURERS panel
+
+- **What:** Implemented `claimweb/fetchers/sec_xbrl.py` — `SecXbrlFetcher` for
+  the LIFE_INSURERS panel. SEC EDGAR companyfacts API (§10.2).
+  Created:
+  - `LIFE_INSURERS` — panel of 15 major U.S. public life insurance holding
+    companies mapped to zero-padded 10-digit CIKs: MetLife, Prudential,
+    Lincoln National, Principal Financial, Aflac, Unum, Reinsurance Group of
+    America, Brighthouse Financial, Equitable Holdings, Voya Financial, CNO
+    Financial Group, Jackson Financial, Globe Life, American Equity Investment
+    Life, F&G Annuities & Life.  Mutual companies (New York Life, Northwestern
+    Mutual, MassMutual, etc.) excluded — no SEC filings.
+  - `_CIK_TO_ENTITY` — reverse lookup from CIK to canonical entity node ID.
+  - `_TAG_MAP` — 9 us-gaap XBRL tags mapped to (ArcClass, source_template,
+    target_template): `Assets`, `Liabilities`, `StockholdersEquity`,
+    `StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest`
+    (Law 1 balance-sheet marginals); `AdvancesFromFederalHomeLoanBanks` (A3);
+    `SecuritiesSoldUnderAgreementsToRepurchase` (A4);
+    `PayablesForCollateralUnderSecuritiesLoanedAndOtherTransactions` (A5);
+    `PolicyholderAccountBalance`, `PolicyholderContractDeposits` (A1).
+  - `_end_date_to_period(end_date_str)` — converts SEC end-date string to
+    Period for calendar-year filers; non-standard fiscal-year-end returns None.
+  - `_period_to_end_date(period)` — returns quarter-end date for a Period.
+  - `_extract_best_fact(entries, period)` — selects the best XBRL tag entry
+    for a period: primary forms (10-K/10-Q) > amendments; entries with
+    `frame` (undimensioned totals) > segment facts; latest filed wins ties.
+    Returns (amount_millions, accession_number, filing_form).
+  - `SecXbrlFetcher.list_available_periods()` — enumerates periods from the
+    `Assets` tag of the first panel entity; calls `_ensure_bundle()`.
+  - `SecXbrlFetcher.acquire(period)` — downloads full companyfacts JSON for
+    each CIK once (14-day cache window); returns handle referencing all CIK
+    JSONs with the target period embedded.
+  - `SecXbrlFetcher.parse(handle)` — for each CIK JSON, extracts facts for
+    `handle.period` across all mapped tags; resolves CIK to canonical entity
+    ID; emits `DIRECT_MEASURED` / `stock_eop` ArcFacts with full provenance
+    (URL, filing accession, XBRL tag name, SHA-256 of JSON).
+  - `SecXbrlFetcher.validate(facts)` — checks: (1) at least one ArcFact
+    emitted, (2) no negative amounts, (3) at least one entity's total assets
+    exceeds the $10 B plausibility floor.
+  Dollar amounts: raw USD from API divided by Decimal("0.000001") to millions.
+  Rate-limiting: User-Agent header per EDGAR guidelines; 14-day cache avoids
+  repeated downloads.
+  Created `tests/fixtures/sec_xbrl/__init__.py` and
+  `tests/fixtures/sec_xbrl/CIK0001099219.json` — MetLife fixture with 2024-Q3
+  and 2024-Q4 data covering Assets, Liabilities, StockholdersEquity,
+  AdvancesFromFederalHomeLoanBanks, SecuritiesSoldUnderAgreementsToRepurchase,
+  PolicyholderAccountBalance (with both framed and unframed entries to test
+  selection logic), and
+  PayablesForCollateralUnderSecuritiesLoanedAndOtherTransactions.
+  Created `tests/unit/test_sec_xbrl.py` with 81 tests:
+  - 3 property-based (hypothesis): schema validity of emitted ArcFacts;
+    USD→MM conversion exactness; Period↔end-date roundtrip.
+  - 78 unit tests covering: _end_date_to_period (valid dates, invalid dates,
+    return type, year/quarter fields), _period_to_end_date (all quarters,
+    roundtrip), _extract_best_fact (no match, amount conversion, USD→MM,
+    primary-form preference, frame preference, latest-filed tiebreak, accn/form
+    returned, amendment fallback, Decimal type, empty input),
+    SecXbrlFetcher.parse (Q4 facts, Assets tag, FHLB arc direction/class/amount,
+    repo arc, policyholder balance with frame selection, sec-lending arc, Q3
+    data, empty for unknown period, data_quality_flag, measurement_basis,
+    provenance_source, provenance_url, provenance_filing, SHA-256 length, period
+    matches handle, assets arc direction, liabilities arc direction, unknown CIK
+    skipped, integer CIK in JSON handled), SecXbrlFetcher.validate (clean,
+    empty→error, negative→warning, implausible assets→error, plausible clean,
+    source_id), SecXbrlFetcher.list_available_periods (sorted, Period objects,
+    includes 2024-Q4, includes 2024-Q3), attributes (source_id, cadence),
+    LIFE_INSURERS panel (nonempty, 10-digit CIKs, insurer: prefix, CIK
+    uniqueness, entity-ID uniqueness, reverse-map consistency, MET present,
+    ≥10 entities), _TAG_MAP (nonempty, 3-tuple values, ArcClass types, assets
+    tag present, FHLB→A3, repo→A4, sec-lending→A5, {entity_id} in templates).
+
+- **Why:** TODO.md Now item: `claimweb.fetchers.sec_xbrl` — SEC companyfacts
+  XBRL fetcher for the LIFE_INSURERS panel, per project plan §10.2.
+
+- **Result:**
+  - `claimweb/fetchers/sec_xbrl.py` — 310 lines
+  - `tests/fixtures/sec_xbrl/CIK0001099219.json` — MetLife fixture
+  - `tests/unit/test_sec_xbrl.py` — 81 tests; 400 total pass; gate green
+
+- **Next:** `claimweb.constraints.sectoral` (Law 3) — Z.1 sectoral aggregate
+  boundary conditions (project plan §1.1).
+
 ### 2026-05-15 — constraints: double-entry consistency (Law 2) with property tests
 
 - **What:** Implemented `claimweb/constraints/double_entry.py` — Law 2 checker.
