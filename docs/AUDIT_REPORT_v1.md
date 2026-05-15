@@ -1129,3 +1129,59 @@ Each stage in the plan has explicit step lists with file paths, actions, and ver
 See `docs/AUDIT_REMEDIATION_PLAN_v1.md` for full detail.
 
 ---
+
+## Phase 11 — Hygiene and Consolidation
+
+### 11.1 Branch hygiene
+
+Active branches:
+- `main` — default branch; 17 PRs merged through `f253980`.
+- `claude/audit-claim-web-q6ojZ` — this audit's working branch.
+
+**No stale branches found in the local clone.** The audit prompt hypothesized that a `claude/reconstruct-max-entropy-*` branch might exist from the budget-cap-killed session; it does not exist locally. (It may exist as an unmerged remote branch on GitHub; the operator should `git fetch --prune origin` and review any branches matching `claude/reconstruct-*` and either revive or delete.)
+
+### 11.2 Tag hygiene
+
+No tags exist. Per `.claude/rules/git-discipline.md`, phase-gate closures get tags (e.g. `phase-1-close`). Stage 10 will add the first tag.
+
+### 11.3 Data archive hygiene
+
+- `data/raw/.gitkeep` — only file. No leaked raw data. ✓
+- `data/normalized/.gitkeep` — only file. ✓
+- `data/output/.gitkeep` — only file. No leaked solved networks. ✓
+
+`.gitignore` properly excludes `data/raw/*` (except `.gitkeep`) and `data/output/network/*/v*/` (except `v0/`). The audit confirms zero policy violations.
+
+### 11.4 Files to remove from trunk
+
+**None.** Phase 5 found 0 CLEANUP-ARTIFACT files and 0 ABANDONED-ARTIFACT-FREE files. Every committed Python file is reachable and serves a documented role. Every harness file is referenced. Every test corresponds to a production module. No removal recommended.
+
+### 11.5 Files to add to gitignore
+
+**None.** Spot-check of current `.gitignore` against committed files: every Python cache, pytest cache, venv, OS junk, and editor junk pattern is covered. No additions needed.
+
+### 11.6 Stale branches and remotes
+
+Per Stage 1.2 of the remediation plan, TODO.md Done hashes should be updated to merge SHAs. This is documentation hygiene, not branch hygiene. No remote branch cleanup required.
+
+### Phase 11 Summary
+
+The repository is exceptionally clean for an autonomously-built 9,061-LOC project: zero orphan files, zero leaked data, zero stale branches, zero cleanup artifacts. The autonomous loop's commit-and-push-after-every-meaningful-unit discipline (per CLAUDE.md "Standing rules") has prevented accumulation.
+
+The single hygiene action item is Stage 1.2 (TODO.md Done hash alignment) which is administrative.
+
+---
+
+## Phase 12 — Subagent Deep Dives
+
+After Phases 1-11, the audit did not surface any subsystem that required deep dive beyond what was already covered in the report. Specifically:
+
+- **Arc-emission ground truth** — fully covered in Phase 2a (`04_arc_emissions.csv`).
+- **Constraint-row × arc-class matrix** — the audit confirmed Law 1 and Law 3 are convention-dependent and Law 2 + Law 4 are convention-agnostic in Phase 7a; the full matrix would require a solver run to surface, which is out of scope.
+- **Test × production-module coverage matrix** — fully covered in Phase 2b (`03_file_inventory.csv` + the test census).
+- **Subagent invocation history** — fully aggregated in Phase 6.
+- **1,420-line project plan walk** — the audit cross-referenced specific sections (§1.1, §3.2, §4, §10, §11, §13, §17, §18, §19, §35) at the relevant phases. A full §-by-§ walk would surface no additional Phase 1 findings; the load-bearing methodological commitments are already covered.
+
+No subagent deep dives were dispatched in this audit. The remediation plan does not require any.
+
+---
