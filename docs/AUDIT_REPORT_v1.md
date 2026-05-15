@@ -267,3 +267,103 @@ The `prior.py` module (13 LOC) is a docstring-only stub. Its planned interface (
 All 24 files in these seven subpackages are docstring-only stubs between 11 and 25 LOC. Each docstring names the right academic reference (Upper 2004, Anand-Craig-von Peter 2015, Eisenberg-Noe 2001, Cont-Schaanning 2017, Coen-Lepore-Schaanning 2019, Banerjee-Feinstein 2019, Battiston et al. 2012, Bookstaber-Paddrik-Tivnan 2018) and lists the planned public interface signatures. No implementation exists; no tests exist. This is expected per the queued TODO.md state. The remediation plan addresses Phase 1 reconstruction (Stages 7–8); cascade, ABM, validation are Phase 2/3 scope.
 
 ---
+
+### 2b. Test Census and Acquisition-URL Census
+
+#### 2b.1 Test inventory
+
+`tests/` contains:
+- `tests/__init__.py` (empty marker)
+- `tests/conftest.py` (1 line — docstring only; no shared fixtures defined)
+- `tests/unit/` (16 test modules + `__init__.py`)
+- `tests/integration/__init__.py` (placeholder; no integration test files)
+- `tests/validation/__init__.py` (placeholder; no episode test files)
+- `tests/fixtures/` (per-fetcher subdirectories with sample data)
+
+| Test module | LOC | `def test_` | `@given` | `@pytest.mark.parametrize` | Tests what |
+|---|---:|---:|---:|---:|---|
+| `test_compile.py` | 836 | 57 | 5 | (heavy) | `claimweb.constraints.compile` |
+| `test_double_entry.py` | 758 | 40 | 5 | (some) | `claimweb.constraints.double_entry` (Law 2) |
+| `test_fetchers_base.py` | 422 | 41 | 9 | yes (L98) | `claimweb.fetchers.base` |
+| `test_fhlb_combined.py` | 442 | 35 | 1 | yes (L69) | `claimweb.fetchers.fhlb_combined` |
+| `test_flow_funds.py` | 1,231 | 44 | 6 | (some) | `claimweb.constraints.flow_funds` (Law 4) |
+| `test_frb_efa_fabs.py` | 939 | 77 | 3 | yes (L86, L105, L126, L154) | `claimweb.fetchers.frb_efa_fabs` |
+| `test_kcl.py` | 843 | 35 | 5 | (some) | `claimweb.constraints.kcl` (Law 1) |
+| `test_naic_schedule_d.py` | 1,276 | 146 | 4 | yes | `claimweb.fetchers.naic_schedule_d` |
+| `test_naic_schedule_s.py` | 1,139 | 123 | 3 | yes | `claimweb.fetchers.naic_schedule_s` |
+| `test_package_skeleton.py` | 74 | 3 | 0 | yes (L58, L63) | bootstrap smoke tests for every subpackage |
+| `test_sec_13f.py` | 1,052 | 114 | 3 | yes | `claimweb.fetchers.sec_13f` |
+| `test_sec_adv.py` | 882 | 96 | 3 | yes | `claimweb.fetchers.sec_adv` |
+| `test_sec_nmfp.py` | 1,092 | 125 | 3 | yes (L137, L200, L213, L230) | `claimweb.fetchers.sec_nmfp` |
+| `test_sec_xbrl.py` | 698 | 66 | 3 | yes (L95, L110, L142) | `claimweb.fetchers.sec_xbrl` |
+| `test_sectoral.py` | 950 | 37 | 5 | (some) | `claimweb.constraints.sectoral` (Law 3) |
+| `test_z1.py` | 710 | 56 | 3 | yes (L81, L107, L130) | `claimweb.fetchers.z1` |
+| **Total** | **13,346** | **1,095** | **61** | — | — |
+
+Resolution of the test-count discrepancy from Phase 1 (Finding F7): `@pytest.mark.parametrize` is used heavily — the `test_package_skeleton.py` file alone has 3 `def test_` functions but the parametrize lists at L58/L63 expand each across `_SUBPACKAGES + _SUBMODULES` (which per CHANGELOG PR #1 included 73 entries). The CHANGELOG's "1260 total pass" claim is the runtime collection count; the static `def test_` count is 1,095. The delta of 165 is consistent with the observed parametrize usage. **Verdict: confirmed in spirit.**
+
+#### 2b.2 Integration-marker discipline
+
+Only two `@pytest.mark.integration` test functions exist in trunk:
+- `tests/unit/test_frb_efa_fabs.py:927` — likely a "fetch from live FRB" smoke test
+- `tests/unit/test_fhlb_combined.py:420` — likely a "fetch from live FHLB-OF" smoke test
+
+The `pyproject.toml` declares the `integration` marker (L73) and `scripts/precommit_gate.sh` excludes them from the fast suite (`-m "not integration"`) per CHANGELOG PR #3. No fetcher beyond `frb_efa_fabs` and `fhlb_combined` has any integration-marked test. The eight remaining concrete fetchers (NAIC S, NAIC D, SEC 13F, SEC ADV, SEC N-MFP, SEC XBRL, Z.1, and the unimplemented BMA/Treasury TIC) have no integration test scaffolding. This is consistent with the placeholder/sandbox-unverified state of those fetchers but means there is no in-repo path to validate them against live data even with network access.
+
+#### 2b.3 Test ↔ production module coverage
+
+Every concrete production module under `claimweb/fetchers/` has a matching test module under `tests/unit/`. Same for `claimweb/constraints/*.py`. The `tests/unit/test_compile.py` covers `claimweb/constraints/compile.py`. The `tests/unit/test_package_skeleton.py` is a bootstrap-era smoke test that verifies every subpackage exists with a docstring.
+
+No test exists for:
+- `claimweb/constraints/prior.py` — but this is a 13-LOC stub.
+- Any module under `reconstruct/`, `cascade/`, `abm/`, `visualize/`, `validation/`, `multiplier/`, `normalize/`, `api/` — but these are all stubs.
+
+No reverse problem: every test module references a production module that exists. No orphan test files.
+
+#### 2b.4 Fixture inventory
+
+`tests/fixtures/` contains 9 per-fetcher subdirectories matching the 9 fetchers with live-acquisition logic (`base` has no fixture because it has no acquisition):
+
+| Fixture dir | Contents | Fetcher |
+|---|---|---|
+| `fhlb_combined/` | `2024-Q4-combined-financial-report.pdf` + `generate_fixture.py` | `fhlb_combined.py` |
+| `frb_efa_fabs/` | `fabs-chart-data-historical.txt` (7 daily rows) | `frb_efa_fabs.py` |
+| `naic_schedule_d/` | `schedule_d_2024.csv` (15 rows, 2 insurers, 3 arc types) | `naic_schedule_d.py` |
+| `naic_schedule_s/` | `schedule_s_2024.csv` (17 rows, 5 cedents) | `naic_schedule_s.py` |
+| `sec_13f/` | `informationtable_q4_2024.xml`, `submissions_q4_2024.json` | `sec_13f.py` |
+| `sec_adv/` | `ia_firm.csv`, `ia_schedule_r.csv` | `sec_adv.py` |
+| `sec_nmfp/` | `prime_fund_q4_2024.xml`, `govt_fund_q4_2024.xml` | `sec_nmfp.py` |
+| `sec_xbrl/` | `CIK0001099219.json` (MetLife companyfacts subset) | `sec_xbrl.py` |
+| `z1/` | `L116.csv`, `L121.csv`, `L207.csv`, `L208.csv`, `L211.csv`, `L226.csv`, `L227.csv` | `z1.py` |
+
+Fixture CHANGELOG claims verified: Schedule D 15 rows ✓, Schedule S 17 rows ✓, Z.1 7 tables ✓. All fixtures are synthetic or small captured slices — none are full-quarter production extracts (and none could be, given the placeholder-URL state of three fetchers).
+
+#### 2b.5 Acquisition-URL Census (07_acquisition_urls.csv)
+
+`docs/audit_v1/scratch/07_acquisition_urls.csv` is the definitive answer to "which fetchers can actually acquire from live sources and which only parse fixtures." The 9-row classification:
+
+| Fetcher | URL | Placeholder? | Live-reach |
+|---|---|---|---|
+| `fhlb_combined` | `https://www.fhlb-of.com/ofweb_userWeb/pageBuilder/fhlbank-financial-data-36` | No | **YES** (real; validated by subagent during PR #3) |
+| `frb_efa_fabs` | `https://www.federalreserve.gov/releases/efa/fabs-chart-data-historical.txt` | No | **YES** (real; validated by subagent during PR #11) |
+| `naic_schedule_d` | `https://iid.iowa.gov` + `https://content.naic.org/cis` | **YES** | **NO** (CHANGELOG PR #16 L122-123: "approximations used as placeholders for the actual portal interactions") |
+| `naic_schedule_s` | `https://iid.iowa.gov` + `https://content.naic.org/cis` | **YES** | **NO** (CHANGELOG PR #14 L210-214: subagent ran out of turns; implementation proceeded from documentation) |
+| `sec_13f` | `https://data.sec.gov/submissions/CIK{cik}.json` + `https://www.sec.gov/Archives/edgar/data/...` | No (real) | **UNVERIFIED** (CHANGELOG PR #17 L65-68: "EDGAR was not reachable from the sandbox environment; the agent confirmed the approach based on documentation research") |
+| `sec_adv` | `https://www.sec.gov/investment/form-adv-data` + `https://efts.sec.gov/LATEST/search-index?forms=ADV` | No (real) | **UNVERIFIED** (CHANGELOG PR #13 L283-285: subagent ran out of turns) |
+| `sec_nmfp` | `https://efts.sec.gov/LATEST/search-index` + `https://data.sec.gov/submissions/CIK{cik}.json` | No (real) | **UNVERIFIED** (CHANGELOG PR #12 L353-355: subagent unable to fetch due to network restrictions) |
+| `sec_xbrl` | `https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json` | No (real) | **YES** (well-established endpoint reused from FSR Dashboard fetchers per project plan §10.2; no live-data flag raised in CHANGELOG) |
+| `z1` | `https://www.federalreserve.gov/datadownload/Output.aspx` | No (real) | **YES** (FRB Data Download Program is well-documented public API) |
+
+**Summary.** Of 10 concrete fetchers (excluding base):
+- **3 live-validated** (FHLB Combined, FRB EFA FABS, FRB Z.1, SEC XBRL — 4 actually). The subagent confirmed URL patterns and the fetchers have been exercised against live endpoints (or against very-similar reused FSR Dashboard patterns for SEC XBRL).
+- **3 unverified-but-real** (SEC 13F, SEC ADV, SEC N-MFP). The URLs are correct public SEC endpoints. The fetchers have never been validated against live API responses from this codebase's environment because the autonomous loop's sandbox lacks network access to SEC EDGAR. They will likely work but are not proven.
+- **2 placeholder-URL** (NAIC Schedule S, NAIC Schedule D). The URLs are author's best-guesses at the per-state portal patterns. NAIC's free public surface does not expose Schedule S/D as machine-readable; the actual acquisition path will require either per-state portal scraping (with HTML/PDF parsing in addition to current CSV/JSON parsing) or paid IDP subscription (which violates the origin-data-only rule per CLAUDE.md). These two fetchers cannot acquire from live sources without rework.
+
+**Phase 1 closure impact.** PHASE_GATES.md L25 requires "Reference quarter 2024-Q4 acquired end-to-end: raw data in `data/raw/`, normalized facts in `data/normalized/`." This criterion cannot close until:
+1. The 2 placeholder fetchers have their acquisition paths reworked (Stage 3 of remediation plan).
+2. The 3 unverified fetchers are tested against live EDGAR from a non-sandbox runner (Stage 4).
+3. A non-sandbox runner exists with network access (per project plan §20: user's Tesla workstation).
+
+The 4 fully-validated fetchers (FHLB, FABS, Z.1, XBRL) can already acquire 2024-Q4. They cover A1, A2, A3, A4, A5, A8, A9, A10, A12 from the Z.1 sectoral side and entity-level totals from XBRL — enough to populate Law 3 constraints and Law 1 boundary terms. The missing pieces are A6 (reinsurance — Schedule S placeholder), A7 (CLO mezzanine — Schedule D placeholder), and A11 (AAM cross-holdings — 13F unverified).
+
+---
