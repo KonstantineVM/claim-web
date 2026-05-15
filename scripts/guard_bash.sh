@@ -33,7 +33,10 @@ for pattern in "${block_patterns[@]}"; do
 done
 
 # Block destructive git operations.
-if echo "$command" | grep -qE 'git[[:space:]]+(push[[:space:]]+--force|reset[[:space:]]+--hard[[:space:]]+HEAD[[:space:]]*~)'; then
+# Note: --force-with-lease is intentionally NOT blocked — it is the safe force-push
+# variant that fails if the remote has diverged beyond the local fetch, preventing
+# accidental history loss. Only bare --force and -f are blocked.
+if echo "$command" | grep -qE 'git[[:space:]]+(push[[:space:]]+((-f|--force)([[:space:]]|$))|reset[[:space:]]+--hard[[:space:]]+HEAD[[:space:]]*~)'; then
     # Force push and hard reset can lose work. Block, require explicit user confirmation.
     echo "BLOCKED: destructive git operation. Force-push and hard-reset can lose work." >&2
     echo "Discuss with the user before performing this. They can run it manually if needed." >&2
