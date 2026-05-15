@@ -247,6 +247,12 @@ test = [
     { name = "pytest" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "hypothesis" },
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12,<5" },
@@ -275,6 +281,12 @@ requires-dist = [
     { name = "tabula-py", specifier = ">=2.10,<3" },
 ]
 provides-extras = ["test", "dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "hypothesis", specifier = ">=6.152.7" },
+    { name = "pytest", specifier = ">=8.4.2" },
+]
 
 [[package]]
 name = "clarabel"
