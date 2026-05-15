@@ -24,6 +24,40 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — constraints: Z.1 sectoral aggregate (Law 3)
+
+- **What:** Implemented `claimweb/constraints/sectoral.py` — Law 3 checker
+  per project plan §1.1.  Full public interface:
+  - `SectorMap` — `dict[str, str]` mapping node_id → sector_id (e.g.
+    `"sector:life_insurance_companies"`).
+  - `SectoralTotals` — `dict[tuple[sector_id, instrument_class_value, side], Decimal]`
+    mapping each *(sector, instrument, "asset"|"liab")* triple to the expected
+    Z.1 published total in millions USD.
+  - `SectoralViolation` / `SectoralResult` — typed result objects with full
+    provenance strings.
+  - `build_sectoral_rows(facts, *, period, sector_map, sectoral_totals)` —
+    compiles one `LinearConstraint` per *(sector, instrument, side)* entry.
+    Asset-side constraints sum outgoing arcs from sector nodes; liability-side
+    constraints sum incoming arcs to sector nodes.  `DIRECT_MEASURED` arcs fold
+    into the RHS as constants; all other arcs remain as variables.
+  - `check_sectoral(network, *, sector_map, sectoral_totals, tol)` — directly
+    verifies Law 3 on a concrete solved network; returns `SectoralResult` with
+    per-violation detail.
+  - `_provenance_parts(provenance)` — parses *(sector_id, instrument_class_value,
+    side)* back out of a provenance string (used by property tests).
+  Default tolerance: 0.1 % relative with $0.1 M absolute floor.
+  Test file: `tests/unit/test_sectoral.py` — 37 tests (5 property-based via
+  hypothesis: soundness, completeness, stability, independence; 32 unit tests
+  covering empty inputs, asset/liability sides, multi-sector networks, period
+  filtering, provenance format, tolerance thresholds).  437 total pass;
+  precommit gate green.
+- **Why:** Phase 1 constraint checkers; enables the solver to receive Z.1
+  sectoral boundary conditions as hard linear equalities.
+- **Result:** `claimweb/constraints/sectoral.py`, `tests/unit/test_sectoral.py`
+- **Failed:** None.
+- **Next:** Law 4 (`flow_funds.py`) and then `compile.py` to aggregate all four
+  laws into a single sparse linear system.
+
 ### 2026-05-15 — fetcher: SEC XBRL companyfacts for LIFE_INSURERS panel
 
 - **What:** Implemented `claimweb/fetchers/sec_xbrl.py` — `SecXbrlFetcher` for
