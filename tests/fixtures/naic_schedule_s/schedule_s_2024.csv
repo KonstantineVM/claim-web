@@ -1,0 +1,18 @@
+CEDENT_NAIC_CODE,CEDENT_NAME,STATEMENT_YEAR,SCHEDULE_PART,LINE_NUM,REINSURER_NAME,REINSURER_NAIC_CODE,REINSURER_FED_ID,DOMICILE_JURISDICTION,TYPE_BUSINESS,CEDED_AMOUNT_THOUSANDS
+68039,Athene Annuity and Life Insurance Company,2024,S4,1,Athene Re Ltd.,0,98-7654321,BMU,T,25000000
+68039,Athene Annuity and Life Insurance Company,2024,S4,2,Athene Re II Ltd.,0,98-7654322,BMU,T,18000000
+68039,Athene Annuity and Life Insurance Company,2024,S4,3,Athene Cayman Asset Co.,0,,CYM,T,9500000
+68039,Athene Annuity and Life Insurance Company,2024,S2,4,General Re Corporation,22292,06-0726885,CT,T,1200000
+68039,Athene Annuity and Life Insurance Company,2024,S2,5,Munich Reinsurance America Inc.,12673,52-0895953,NJ,T,875000
+92525,American Equity Investment Life Insurance Company,2024,S4,1,Iowa Insurance Captive Ltd.,0,,BMU,T,12000000
+92525,American Equity Investment Life Insurance Company,2024,S4,2,North End Re (Cayman),0,,CYM,T,8500000
+92525,American Equity Investment Life Insurance Company,2024,S2,3,Swiss Re Life & Health America Inc.,78301,06-0938688,MO,T,450000
+33588,Fidelity and Guaranty Life Insurance Company,2024,S4,1,Front Street Re (Bermuda) Ltd.,0,,BMU,T,6200000
+33588,Fidelity and Guaranty Life Insurance Company,2024,S4,2,Aspida Life Re Ltd.,0,,BMU,T,4100000
+33588,Fidelity and Guaranty Life Insurance Company,2024,S2,3,Hannover Life Reassurance Company of America,83275,59-0578430,FL,T,320000
+94048,Global Atlantic Life Insurance Company,2024,S4,1,Commonwealth Annuity and Life Insurance Co.,84824,,MA,T,5500000
+94048,Global Atlantic Life Insurance Company,2024,S4,2,KKR Life Re (Cayman),0,,CYM,T,3800000
+94048,Global Atlantic Life Insurance Company,2024,S2,3,Transamerica Life Insurance Company,70688,42-1329437,IA,T,280000
+68381,Protective Life Insurance Company,2024,S4,1,Protective Life and Annuity Insurance Company,68586,,AL,T,2200000
+68381,Protective Life Insurance Company,2024,S2,2,RGA Reinsurance Company,93213,43-1340366,MO,T,950000
+68381,Protective Life Insurance Company,2024,S2,3,Pacific Life Insurance Company,67466,33-0354986,NE,T,410000
