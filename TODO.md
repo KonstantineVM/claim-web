@@ -17,17 +17,17 @@ Claude does this without asking. The next session picks up the new Now.
 
 ## Now
 
-- **[fetcher]** Implement `claimweb.fetchers.z1`: pull the FRB Z.1 quarterly release tables L.116, L.121, L.207, L.208, L.211, L.226, L.227. Per project plan §10.1. Provides Law 3 sectoral constraints.
+- **[constraints]** Implement `claimweb.constraints.double_entry`: Law 2 checker. Per project plan §1.1 and `constraint-author` skill.
 
 ## Next
 
-1. **[constraints]** Implement `claimweb.constraints.double_entry`: Law 2 checker. Per project plan §1.1 and `constraint-author` skill.
-2. **[fetcher]** Implement `claimweb.fetchers.sec_xbrl`: SEC companyfacts XBRL fetcher for the LIFE_INSURERS panel. Per project plan §10.2.
-3. **[constraints]** Implement `claimweb.constraints.sectoral`: Law 3 checker. Per project plan §1.1.
-4. **[constraints]** Implement `claimweb.constraints.flow_funds`: Law 4 checker. Per project plan §1.1.
-5. **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
-6. **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data.
-7. **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
+1. **[fetcher]** Implement `claimweb.fetchers.sec_xbrl`: SEC companyfacts XBRL fetcher for the LIFE_INSURERS panel. Per project plan §10.2.
+2. **[constraints]** Implement `claimweb.constraints.sectoral`: Law 3 checker. Per project plan §1.1.
+3. **[constraints]** Implement `claimweb.constraints.flow_funds`: Law 4 checker. Per project plan §1.1.
+4. **[constraints]** Implement `claimweb.constraints.compile`: aggregates all four laws into a single sparse linear system. Per `constraint-author` skill.
+5. **[fetcher]** Implement `claimweb.fetchers.frb_efa_fabs`: FRB Enhanced Financial Accounts FABS daily dataset, per project plan §10.9. Provides intra-quarter FABN funding-agreement issuance flow data.
+6. **[fetcher]** `claimweb.fetchers.sec_nmfp`: SEC Form NMFP MMF holdings (per project plan §10.5)
+7. **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
 8. **[fetcher]** `claimweb.fetchers.sec_adv`: SEC Form ADV investment adviser registrations (per project plan §10.6)
 9. **[fetcher]** `claimweb.fetchers.naic_schedule_s`: NAIC Schedule S reinsurance (per project plan §10.3) — spawn `data-source-investigator` first
 
@@ -68,6 +68,7 @@ Listed in `docs/PHASE_GATES.md`.
 
 <!-- Move completed items here. Keep ~30 days, prune monthly. -->
 
+- **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.z1`: `Z1Fetcher` with `list_available_periods`, `acquire`, `parse`, `validate`. Downloads all 7 target tables (L.116, L.121, L.207, L.208, L.211, L.226, L.227) from the FRB DDP; parses the CSV format; maps 27 key series to ArcFacts with `DIRECT_MEASURED`/`stock_eop`. 79 new tests including 3 property-based; 279 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "fetcher: FRB Z.1". Commit: TBD.
 - **[constraints]** 2026-05-15 — Implemented `claimweb.constraints.kcl`: Law 1 (balance-sheet identity / KCL) checker. `build_kcl_rows` compiles one sparse linear equality per node; `check_kcl` verifies the identity on a concrete network. 35 tests (5 property-based via hypothesis: soundness, completeness, stability, independence, plus 30 unit tests). 200 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "constraints: balance-sheet identity Law 1". Commit: 2c64019.
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.fhlb_combined`: `FhlbCombinedFetcher` with `list_available_periods`, `acquire`, `parse` (A3 aggregate + named-insurer arcs), `validate`. Fixture at `tests/fixtures/fhlb_combined/2024-Q4-combined-financial-report.pdf`. 44 new tests; 165 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "fetcher: FhlbCombinedFetcher".
 - **[fetcher]** 2026-05-15 — Implemented `claimweb.fetchers.base`: `BaseFetcher` ABC, `ArcFact` schema, `Period`, `ArcClass`, `DataQualityFlag`, `RawDataHandle`, `ValidationReport`. 48 new tests (unit + hypothesis property-based); 121 total pass; precommit gate green. See CHANGELOG 2026-05-15 entry "fetcher: BaseFetcher abstraction and ArcFact schema".

@@ -24,6 +24,75 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: FRB Z.1 Financial Accounts of the United States (project plan §10.1)
+
+- **What:** Implemented `claimweb/fetchers/z1.py` — the Z.1 sectoral-constraint
+  fetcher.  Created:
+  - `Z1Fetcher(BaseFetcher)` — full fetcher class with all four required
+    methods: `list_available_periods`, `acquire`, `parse`, `validate`.
+  - `_parse_ddp_csv(content)` — flexible parser for the FRB Data Download
+    Program CSV format (`layout=seriescolumn`).  Handles: preamble rows
+    ("Unique Identifier", "Series Description", "Multiplier", "Currency"),
+    blank separators, data rows, NA/ND/dot missing-value tokens, quoted
+    fields, and both ISO-date and "YYYY:QN" period notation.
+  - `_date_str_to_period(date_str)` — robust quarter inference from ISO
+    dates (end-of-quarter: March/June/Sep/Dec; start-of-quarter: Jan/Apr/
+    Jul/Oct), YYYY:QN, and YYYY-QN formats.
+  - `_multiplier_factor(label)` — converts "Millions"/"Billions"/"Thousands"
+    multiplier labels to the Decimal scaling factor needed to normalize raw
+    values to millions of USD.
+  - `_SERIES_MAP` — 27 key series from the 7 target tables (L.116, L.121,
+    L.207, L.208, L.211, L.226, L.227) mapped to (ArcClass, source_node_id,
+    target_node_id).  Covers: FHLB advances (A3), MMF shares (A8), agency/GSE
+    securities (A10), repos (A4), commercial paper/FABCP (A2), bank deposits
+    (A9), and sector totals (A12).  Unmapped series are logged at DEBUG and
+    skipped.
+  - Bundle-based caching: `acquire(period)` downloads all 7 table CSVs from
+    the FRB DDP once per 30-day window; cached at `data/raw/z1/bundle/`.
+    `parse(handle)` filters the complete historical CSV to the requested period.
+  - `validate(facts)` checks: non-empty parse, all amounts non-negative,
+    life-insurer total financial assets ≥ $500B plausibility floor.
+  - Data quality: all emitted arcs are `DIRECT_MEASURED`; measurement basis
+    is `stock_eop` (end-of-period stocks).
+  Created fixture files at `tests/fixtures/z1/` (7 synthetic CSVs, one per
+  target table) and `tests/unit/test_z1.py` with 79 tests:
+  - `TestDateStrToPeriod` — 17 tests covering end-of-quarter, start-of-quarter,
+    YYYY:QN, YYYY-QN, whitespace tolerance, and invalid inputs.
+  - `TestMultiplierFactor` — 10 tests covering all three multiplier labels
+    and case-insensitivity.
+  - `TestParseDdpCsv` — 11 tests covering series-ID extraction, multiplier
+    application, NA/dot handling, no-preamble CSV, Billions multiplier, empty
+    content, and quoted fields.
+  - `TestZ1FetcherParse` — 16 tests covering: arc-fact presence, correct period,
+    DIRECT_MEASURED flag, stock_eop basis, provenance fields, Decimal amounts,
+    SHA256, FHLB-advance arc direction (source=life_insurance, target=fhlb),
+    MMF-share arc direction (source=mmf, target=life_insurance), Billions
+    multiplier application (L208 fixture), missing-period empty result,
+    empty-handle empty result, unmapped-series skipping, and multi-table coverage.
+  - `TestZ1FetcherValidate` — 5 tests covering clean path, empty facts,
+    negative amounts, implausible LIC total assets, and source_id correctness.
+  - `TestZ1ListAvailablePeriods` — 2 tests verifying sorted list and Period
+    type.
+  - `TestZ1FetcherAttributes` — 4 attribute tests.
+  - `TestSeriesMap` — 8 invariant tests on the series-map structure.
+  - 3 property-based tests (hypothesis): ArcFact schema compliance for all
+    emitted facts, multiplier associativity, date→period validity.
+- **Why:** Phase 1 gate criterion: `Z1Fetcher` implemented for tables L.116,
+  L.121, L.207, L.208, L.211, L.226, L.227.  Provides the sectoral boundary
+  conditions (Law 3) needed by the forthcoming `sectoral` constraint module.
+- **Result:** 279 tests pass; precommit gate green.  Gate criterion
+  "Z1Fetcher implemented for tables L.116, L.121, L.207, L.208, L.211,
+  L.226, L.227" is now met.
+- **Failed:** Nothing significant.  The property-based test initially used a
+  `tmp_path` pytest fixture with `@given`, which hypothesis flags as a health
+  violation (fixture not reset between generated examples).  Fixed by adding
+  `suppress_health_check=[HealthCheck.function_scoped_fixture]` and adding a
+  `mkdir(parents=True, exist_ok=True)` call in `_make_handle()`.
+  pdfplumber, beautifulsoup4, and lxml were not installed in the `uv`-managed
+  pytest tool environment (causing a collection error for test_fhlb_combined.py
+  when running the full gate).  Fixed with `uv tool install --with ...`.
+- **Next:** Law 2 checker (`claimweb.constraints.double_entry`) per TODO.
+
 ### 2026-05-15 — constraints: balance-sheet identity Law 1 (project plan §1.1)
 
 - **What:** Implemented `claimweb/constraints/kcl.py` — the Law 1
