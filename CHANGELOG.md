@@ -24,6 +24,60 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — constraints: balance-sheet identity Law 1 (project plan §1.1)
+
+- **What:** Implemented `claimweb/constraints/kcl.py` — the Law 1
+  (balance-sheet identity / node-level KCL) constraint module.  Created:
+  - Shared constraint types: `ArcKey`, `LinearConstraint`, `ConstraintSet`
+    (to be imported by future constraint modules and `compile.py`).
+  - KCL-specific types: `NodeBalance`, `NetworkState`, `KCLViolation`,
+    `KCLResult`.
+  - `build_kcl_rows(network: NetworkState) -> ConstraintSet` — compiles one
+    sparse linear equality per node for the period.  `DIRECT_MEASURED` arcs
+    are folded into the RHS as constants; all other arcs remain as ±1
+    variables.  Duplicate arcs (same source/target/instrument/period) are
+    aggregated; the highest-quality `DataQualityFlag` wins.
+  - `check_kcl(network: NetworkState, *, tol: Decimal) -> KCLResult` — directly
+    verifies Law 1 on a solved/concrete network.  Tolerance is relative
+    (default 0.01 % of total assets) with a 0.01 M absolute floor, per the
+    conservation-laws standing rule.
+  - Helper `_provenance_node` for extracting the node ID from a provenance
+    string (used in tests and the independence property check).
+  Created `tests/unit/test_kcl.py` with 35 tests (5 property-based +
+  30 unit):
+  - `test_soundness_build_kcl_rows` — hypothesis: on a Law-1-satisfying
+    network, all constraints are satisfied when arc values are substituted.
+  - `test_soundness_check_kcl` — hypothesis: check_kcl returns satisfied=True
+    on a Law-1-satisfying network.
+  - `test_completeness_check_kcl` — hypothesis: perturbing one arc by ≥ 1 000
+    causes at least one violation to be detected.
+  - `test_stability_build_kcl_rows` — hypothesis: changing a DIRECT_MEASURED
+    arc by δ shifts the source node's RHS by −δ and the target node's RHS by
+    +δ; all other nodes' RHS are unchanged.
+  - `test_independence_build_kcl_rows` — hypothesis: each constraint's
+    matrix_row references only arcs incident to that constraint's node.
+  - `TestBuildKclRows` — 11 unit tests covering empty networks, single arcs,
+    direct-measured folding, nonfinancial assets, multiple instruments, and
+    duplicate arc aggregation.
+  - `TestCheckKcl` — 13 unit tests covering satisfied/violated detection,
+    tolerance floor, diagnostic fields, ghost nodes, and duplicate arcs.
+  - `TestProvenanceNode`, `TestBuildCheckRoundTrip` — 6 additional tests.
+  Also: installed `hypothesis` and its dependencies into the `uv`-managed
+  pytest tool environment (was missing; gate was failing with
+  `ModuleNotFoundError: No module named 'hypothesis'`).  The `pyproject.toml`
+  already listed `hypothesis` as a dev dependency — this was a gap in the
+  environment setup, not a missing declaration.
+- **Why:** Phase 1 gate criterion: all four conservation-law constraint
+  builders implemented with property-based hypothesis tests passing.  KCL is
+  Law 1; three more laws remain before the gate criterion is met.
+- **Result:** 200 tests pass; precommit gate green.  The Law 1 constraint
+  module is ready for consumption by the reconstruction solver.
+- **Failed:** Nothing significant.  Two unit tests initially had missing
+  `NodeBalance` entries for target nodes (tests were written assuming ghost
+  nodes with E=0, but the large residuals at those nodes caused spurious gate
+  violations).  Fixed by explicitly balancing all nodes in the test.
+- **Next:** Law 2 checker (`claimweb.constraints.double_entry`) per TODO.
+
 ### 2026-05-15 — fetcher: FhlbCombinedFetcher (project plan §10.4)
 
 - **What:** Implemented `claimweb/fetchers/fhlb_combined.py` — the FHLB Office
