@@ -24,6 +24,61 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — constraints: double-entry consistency (Law 2) with property tests
+
+- **What:** Implemented `claimweb/constraints/double_entry.py` — Law 2 checker.
+  Created:
+  - `InstrumentTotals` — type alias `dict[str, Decimal]` mapping ArcClass value
+    to the expected aggregate total in millions USD (from Z.1 or FHLB data).
+  - `DoubleEntryViolation` — per-instrument violation dataclass with `actual_total`,
+    `expected_total`, `residual` (signed), `arc_count`, and `provenance`.
+  - `DoubleEntryResult` — aggregate result of `check_double_entry` with
+    `instrument_count` (all instruments present in network) and `checked_count`
+    (instruments actually verified against a boundary term).
+  - `build_double_entry_rows(facts, *, period, boundary_terms)` — emits one
+    `LinearConstraint` per instrument in `boundary_terms`.  `DIRECT_MEASURED`
+    arcs are folded into the RHS as known constants; all other arcs remain as
+    variables.  When `boundary_terms` is `None` or empty, the law is trivially
+    satisfied for a closed network and an empty `ConstraintSet` is returned.
+  - `check_double_entry(network, *, boundary_terms, tol)` — verifies that the
+    total arc amount for each instrument matches its expected total within
+    tolerance (default 0.5 % relative; $0.1 M absolute floor per conservation-
+    laws rule).  Without `boundary_terms` the check trivially passes (no
+    external reference).
+  - `_provenance_instrument(provenance)` — helper to extract the instrument
+    class value from a double-entry provenance string.
+  Shared types (`ArcKey`, `LinearConstraint`, `ConstraintSet`, `NetworkState`,
+  `_group_arcs_by_key_with_flag`, `_ZERO`) are imported from `kcl.py` rather
+  than duplicated.  Tolerance follows the conservation-laws rule: 0.5 % for
+  instrument-level double-entry (wider than the 0.01 % node-level KCL because
+  boundary effects are more pronounced at instrument level).
+  Created `tests/unit/test_double_entry.py` with 40 tests:
+  - 5 property-based (hypothesis): soundness, soundness via check, completeness,
+    stability, independence.
+  - 35 unit tests covering: empty facts, None/empty boundary_terms, single unknown
+    arc, single DIRECT_MEASURED arc (matrix_row empty), mixed arcs, period
+    filtering, multiple instruments, instrument absent from boundary_terms, zero
+    boundary with no arcs, constraint provenance format, unknowns list, check with
+    no boundary terms, check satisfied, violated (too high and too low), violation
+    below and above tolerance, zero boundary with non-zero actual, instrument not
+    in network, multiple instruments with partial violation, result counts, empty
+    network, provenance key info, arc_count, type fields, _provenance_instrument
+    helper, signed residual, absolute floor behaviour.
+  Also fixed the precommit gate environment: the `pytest` uv tool was missing
+  `hypothesis`, `httpx`, `beautifulsoup4`, `pdfplumber`, `lxml`, `pymupdf`, and
+  `tabula-py`. Installed all via `uv tool install pytest --with ...`.  Gate now
+  passes clean (319 tests, 2 deselected integration tests).
+
+- **Why:** TODO.md Now item: Law 2 (double-entry) constraint module per project
+  plan §1.1 and constraint-author skill.
+
+- **Result:**
+  - `claimweb/constraints/double_entry.py` — 214 lines
+  - `tests/unit/test_double_entry.py` — 40 tests; 319 total pass; gate green
+
+- **Next:** `claimweb.constraints.sectoral` (Law 3) — Z.1 sectoral aggregate
+  boundary conditions (project plan §1.1).
+
 ### 2026-05-15 — fetcher: FRB Z.1 Financial Accounts of the United States (project plan §10.1)
 
 - **What:** Implemented `claimweb/fetchers/z1.py` — the Z.1 sectoral-constraint
