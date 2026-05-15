@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claimweb"
+version = "0.0.0"
+description = "U.S. life-insurance regulatory-arbitrage network as a conservation circuit"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "CLAIM-WEB project" },
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+
+# Per project plan §19. Floor versions chosen to track the scientific-Python
+# stack as of the project's start; resolver picks compatible patch versions.
+dependencies = [
+    # Core scientific stack (§19)
+    "numpy>=2.1,<3",
+    "scipy>=1.14,<2",
+    "pandas>=2.2,<3",
+    "networkx>=3.4,<4",
+    "cvxpy>=1.5,<2",
+    "pyarrow>=18.0,<22",
+    # Statistical (§19)
+    "statsmodels>=0.14,<0.16",
+    "scikit-learn>=1.5,<2",
+    # Plotting (§19)
+    "matplotlib>=3.9,<4",
+    "plotly>=5.24,<7",
+    "pyvis>=0.3.2,<0.4",
+    # Data acquisition (§19)
+    "httpx>=0.27,<0.29",
+    "requests>=2.32,<3",
+    "beautifulsoup4>=4.12,<5",
+    "pdfplumber>=0.11,<0.12",
+    "tabula-py>=2.10,<3",
+    "lxml>=5.3,<7",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3,<9",
+    "hypothesis>=6.122,<7",
+]
+dev = [
+    "pytest>=8.3,<9",
+    "hypothesis>=6.122,<7",
+    "ruff>=0.8,<0.13",
+    "mypy>=1.13,<2",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["claimweb*"]
+exclude = ["tests*", "notebooks*", "data*", "docs*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: tests that take longer than 5 seconds",
+    "validation: historical-retrodiction episode tests (project plan §17)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_return_any = true
+strict_equality = true
+ignore_missing_imports = true

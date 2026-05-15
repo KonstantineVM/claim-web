@@ -28,7 +28,13 @@ claimweb_json_err
 claimweb_smoke
 
 # Raw data archive (content-addressed; archived separately per project plan §47)
-data/raw/
+data/raw/*
+!data/raw/.gitkeep
+
+# Solved-network outputs per period per version. v0 placeholder kept; later
+# versions are reproducible from raw + code, so they don't belong in git.
+data/output/network/*/v*/
+!data/output/network/*/v0/
 
 # OS junk
 .DS_Store
