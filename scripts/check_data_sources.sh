@@ -26,6 +26,8 @@ patterns=(
 violations=0
 for pattern in "${patterns[@]}"; do
     # Only search source-code files. Don't search docs (which legitimately mention these as context).
+    # The enforcement scripts themselves are excluded — they have to contain the pattern strings
+    # in order to detect them. Self-references are not violations.
     matches=$(grep -rIniE "$pattern" \
         --include='*.py' \
         --include='*.toml' \
@@ -37,6 +39,10 @@ for pattern in "${patterns[@]}"; do
         --exclude-dir='node_modules' \
         --exclude-dir='.venv' \
         --exclude-dir='.claude/session-log' \
+        --exclude='check_data_sources.sh' \
+        --exclude='guard_no_paid_aggregator.sh' \
+        --exclude='guard_bash.sh' \
+        --exclude='post_edit_check.sh' \
         . 2>/dev/null || true)
     if [ -n "$matches" ]; then
         echo "FAIL: paid-aggregator reference found:" >&2
