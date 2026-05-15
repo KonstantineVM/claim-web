@@ -958,3 +958,62 @@ All 5 constraint modules are already aligned with Reading A. Only the 9 affected
 - **G3 ownership direction** ambiguity in project plan §3.2 prose; code follows one reading consistently.
 
 ---
+
+## Phase 8 — External Research Context
+
+### 8a. Methodology Context
+
+The audit ran four targeted web searches on the methodology choices CLAIM-WEB inherits.
+
+**Anand-Craig-von Peter (2015) minimum-density reconstruction** — confirmed at *Quantitative Finance* 15(4):625-636, BIS Working Paper 455. The R package `NetworkRiskMeasures` (CRAN) is the reference implementation. The published claim — "minimum-density solution overestimates contagion, whereas maximum entropy underestimates it, and using the two benchmarks side by side defines a useful range that bounds the cost of contagion in the true interbank network when counterparty exposures are unknown" — directly matches CLAIM-WEB's bracketing approach per project plan §13 and CLAUDE.md standing rule. **The methodology is sound and current.**
+
+**Mistrulli (2011)** — confirmed at *Journal of Banking & Finance* 35(5):1114-1127. The audit notes a nuance: Mistrulli finds that *while the maximum entropy method tends to underestimate the extent of contagion in line with prevailing literature, this does not hold in general. Under certain circumstances, depending on the structure of the interbank linkages, the recovery rates of interbank exposures and banks' capitalization, the maximum entropy approach overestimates the scope for contagion.* The CLAIM-WEB framing (ME underestimates → MD overestimates → bracket bounds the truth) is the common case; under some network topologies the ordering can flip. **The remediation plan should add a note (Stage 9 of plan) for the methodology paper to disclose this nuance.**
+
+**Cont-Schaanning (2017)** — confirmed at SSRN 2955646. Recent extensions:
+- **Caccioli et al. (2024), "Modelling fire sale contagion across banks and non-banks,"** *Journal of Financial Stability* 71. Models indirect contagion across UK banks and non-banks subject to different leverage/capital constraints — directly relevant to CLAIM-WEB's bank-insurer-AAM network architecture.
+- **ECB MaSTER 2025 macroprudential stress test report** uses fire-sale extensions in a top-down stress-testing framework.
+- Operations Research 2024 paper "Preventing Price-Mediated Contagion Due to Fire Sales Externalities" extends to the strategic foundations of macroprudential regulation.
+
+These extensions sit downstream of CLAIM-WEB's Phase 2-3 scope. The cascade-author skill should reference the Caccioli et al. (2024) paper when implementing `fire_sale.py` (Stage out-of-scope for Phase 1; remediation noted in Stage 7 future work).
+
+**Methodological recency check:** the four core methods (Eisenberg-Noe 2001, Anand-Craig-von Peter 2015, Cont-Schaanning 2017, Battiston et al. 2012 DebtRank) remain the canonical references in the 2024-2026 financial-network systemic-risk literature. CLAIM-WEB's choice of references is current and defensible.
+
+### 8b. Data-Source Availability Context
+
+The audit ran four searches on the placeholder-URL and unverified-URL fetchers to validate the live-acquisition prospects.
+
+**NAIC Schedule S / Schedule D — the placeholder-URL gap.** NAIC's content site exposes paid IDP product pages at `content.naic.org/prod_serv_idp_sched_d.htm` and `content.naic.org/prod_serv_idp_reinsurance.htm`. These are **subscription products**, not free machine-readable endpoints. The audit confirms what the PR #16 CHANGELOG entry already disclosed: NAIC does not provide a free public JSON/XML/XBRL API for Schedule D or Schedule S. The free path is per-state DOI portal scraping.
+
+**Iowa Insurance Division (`iid.iowa.gov`) — critical future blocker.** The Iowa site hosts financial statements for IA-domiciled insurers (Athene, American Equity, F&G are the key PE-affiliated cedents). However, the search returned a structural warning: **"The RIU portal will no longer be accessible after June 30, 2026"**. The Regulated Insurance Unit (RIU) portal is the primary acquisition path implied by `naic_schedule_s.py:563` (`{iid.iowa.gov}/companies/{naic_code}/financials/{year}/schedule_s`). After June 30, 2026 — six weeks from the audit-start date — this path will need to be replaced. The remediation plan's Stage 3 (NAIC placeholder URL replacement) should be executed before the portal sunsets, and the replacement path must be researched.
+
+**FHLB Office of Finance — confirmed live.** Search returns the same URL the fetcher uses: `https://www.fhlb-of.com/ofweb_userWeb/pageBuilder/fhlbank-financial-data-36`. Direct PDF examples (e.g. `https://www.fhlb-of.com/ofweb_userWeb/resources/2024Q4CFR.pdf`) confirm the FHLB-OF site continues to serve quarterly Combined Financial Reports. **`fhlb_combined.py` acquisition path is current and working as of audit start.**
+
+**Bermuda Monetary Authority — partial path.** `bma.bm` exposes a searchable register at `bma.bm/regulated-entities` and per-class public filings (Class 4: `bma.bm/public-filings/full-filings-class-4`; Class E: `bma.bm/public-filings/full-filings-class-e`). These are PDFs/documents, not machine-readable. Implementation of `claimweb/fetchers/bma_register.py` (Phase 2 scope) will require PDF-extraction logic similar to `fhlb_combined.py`. **No machine-readable JSON/XML API exists.**
+
+**SEC EDGAR rate limit — confirmed at 10 req/sec.** Policy effective since July 27, 2021; reaffirmed in 2025-2026 documentation. Required: `User-Agent` header. Penalty for excess: IP-level 403 Forbidden for ~10 minutes. CLAIM-WEB's `sec_nmfp.py` uses 150ms between requests (6.7 req/s, compliant). `sec_13f.py` and `sec_adv.py` should be spot-checked for the same compliance pattern (not deeply verified in this audit).
+
+### 8. Phase 8 Summary
+
+- The four methodological references (Anand-Craig-von Peter 2015; Mistrulli 2011; Cont-Schaanning 2017; Eisenberg-Noe 2001) are confirmed at the cited venues with stable URLs. CLAIM-WEB's methodology is current.
+- One nuance worth disclosing in the methodology paper: Mistrulli's finding that ME-vs-true ordering can flip under some network topologies; CLAIM-WEB's "ME underestimates, MD overestimates" is the common case, not universal.
+- One recent extension (Caccioli et al. 2024) is directly relevant to the Phase 2 cascade implementation and should be added to the `cascade-author` skill's reference list.
+- **NAIC paid-IDP-only confirmed:** the placeholder-URL gap is structural, not a fetcher bug. Free path requires per-state DOI portal scraping. The Iowa RIU portal sunsets June 30, 2026 — a six-week deadline from audit-start. Stage 3 of remediation must execute before that date or pivot to an alternative path.
+- FHLB Office of Finance is the only Phase 1 data source whose URL is independently confirmed alive and unchanged at audit time.
+- SEC EDGAR rate limit (10 req/s) is real and enforced; the existing fetchers' rate limiters appear compliant.
+
+**Sources:**
+- [Anand, Craig, von Peter (2015) "Filling in the Blanks", Quantitative Finance 15(4):625-636](https://www.tandfonline.com/doi/abs/10.1080/14697688.2014.968195)
+- [Mistrulli (2011) "Assessing Financial Contagion", JBF 35(5):1114-1127](https://www.sciencedirect.com/science/article/abs/pii/S0378426610003687)
+- [Cont, Schaanning (2017) "Fire Sales, Indirect Contagion and Systemic Stress Testing"](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2955646)
+- [Caccioli et al. (2024) "Modelling fire sale contagion across banks and non-banks"](https://ideas.repec.org/a/eee/finsta/v71y2024ics1572308924000160.html)
+- [NAIC IDP Schedule D product page](https://content.naic.org/prod_serv_idp_sched_d.htm)
+- [NAIC IDP Reinsurance Data product page](https://content.naic.org/prod_serv_idp_reinsurance.htm)
+- [Iowa Insurance Division — Financial Statements](https://iid.iowa.gov/legal-resources/reports/financial-statements)
+- [FHLB Office of Finance — Financial Data](https://www.fhlb-of.com/ofweb_userWeb/pageBuilder/fhlbank-financial-data-36)
+- [FHLB 2024-Q4 Combined Financial Report](https://www.fhlb-of.com/ofweb_userWeb/resources/2024Q4CFR.pdf)
+- [Bermuda Monetary Authority — Regulated Entities](https://www.bma.bm/regulated-entities)
+- [BMA — Class 4 Insurance Public Filings](https://www.bma.bm/public-filings/full-filings-class-4)
+- [SEC.gov — Accessing EDGAR Data](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data)
+- [SEC.gov — New EDGAR Rate Control Limits](https://www.sec.gov/filergroup/announcements-old/new-rate-control-limits)
+
+---
