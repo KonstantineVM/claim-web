@@ -794,3 +794,79 @@ This is exceptionally clean for an autonomously-built repository. The autonomous
 - No orphan/dead/cleanup files.
 
 ---
+
+## Phase 6 — Open Questions and Pending Work
+
+`docs/audit_v1/scratch/08_pending_work.csv` is the aggregated pending-work register. The audit grouped items by source and classification.
+
+### 6.1 Aggregated counts by classification
+
+| Classification | Count | Source |
+|---|---:|---|
+| Active development — TODO.md Now/Next | 8 | The autonomous-loop's forward queue |
+| Active development — explicit Phase 2 future work | 1 | 2025 SSAP 43R schema break (PR #16) |
+| Open Phase 1 gate criteria | 7 | PHASE_GATES.md L25, L28–L33 |
+| Stale-and-closed Phase 1 gate criteria (need check-off) | 10 | PHASE_GATES.md L17–L24, L26, L27 |
+| Subagent-failure-orphan | 4 | PRs #12, #13, #14, #17 (sec_nmfp, sec_adv, naic_schedule_s, sec_13f) |
+| Placeholder-acknowledgment | 2 | PR #14 (NAIC S), PR #16 (NAIC D) |
+| Process improvement (subagent reliability) | 3 | literature-checker never completed; documentation-curator never invoked; data-source-investigator 3/9 failed |
+| Documentation drift | 4 | PHASE_GATES checkboxes; TODO.md Done hashes; .claude/hooks/ naming; fred.py legacy |
+| Methodological ambiguity | 2 | Project plan §1.1 (arc direction); project plan §3.2 (G3 direction) |
+| Code-resident TODO/FIXME/HACK/XXX comments | **0** | Remarkably clean |
+| Resolved-but-comment-not-removed | 0 | None found |
+
+The defining pattern: **the autonomous loop is forward-disciplined.** It does not leave TODO comments in code; it does not leave half-finished implementations. When something cannot be completed, it is recorded in CHANGELOG with explicit failure diagnosis and queued in TODO.md. The unresolved items live in documentation, not in code.
+
+### 6.2 The four subagent-failure-orphans
+
+CHANGELOG explicit admissions that a fetcher implementation proceeded from documentation alone, without successful subagent investigation:
+
+1. **`naic_schedule_s.py` (PR #14)** — `data-source-investigator` ran out of turns (CHANGELOG L210-214). Implementation from project plan §10.3 and NAIC blank schedule documentation.
+2. **`sec_adv.py` (PR #13)** — `data-source-investigator` ran out of turns (CHANGELOG L283-285). Implementation from project plan §10.6 and public SEC/IAPD documentation.
+3. **`sec_nmfp.py` (PR #12)** — `data-source-investigator` unable to fetch live EDGAR due to network restrictions (CHANGELOG L353-355). Implementation from public SEC documentation and known N-MFP schema.
+4. **`sec_13f.py` (PR #17)** — EDGAR unreachable from sandbox (CHANGELOG L65-68). Subagent confirmed approach from documentation.
+
+Of these four, two (Schedule S, Schedule D — and Schedule D's investigator did succeed) end up with placeholder URLs because the source genuinely lacks free machine-readable access. The other three use real SEC endpoints that should work once tested from a network-enabled environment.
+
+### 6.3 Subagent reliability process gaps
+
+- **`literature-checker`** — has never produced a recorded report. TODO.md L20 has it queued for the current Now item (`max_entropy`), and CHANGELOG references it being "spawned" but the prior session hit Anthropic's 15-routine-runs-per-day cap before the subagent ran. No CHANGELOG entry confirms a completed literature-checker run for any constraint or reconstruction module. **Process gap: the `reconstruction-author` and `cascade-author` skills mandate a literature-checker invocation; this mandate has not been satisfied.**
+
+- **`documentation-curator`** — has never been invoked. CLAUDE.md describes the agent; PHASE_GATES.md and CHANGELOG drift conditions are exactly what the agent is designed to address; the agent has been available since initial harness commit; yet zero CHANGELOG entries reference it. **Process gap: the agent should fire at phase transitions and on every documentation drift event; it does not.**
+
+- **`data-source-investigator`** reliability: 6/9 successful (FHLB Combined, FRB EFA FABS, Z.1 [unrecorded], SEC XBRL [unrecorded], NAIC Schedule D [partial], FRB FABS); 3/9 failed (Schedule S, SEC ADV, SEC N-MFP). For the failed runs, the autonomous loop honestly recorded the failure in CHANGELOG and proceeded documentation-only.
+
+The remediation (Stage 2 of the plan) addresses subagent reliability by:
+- Adding a documentation-only mode to `data-source-investigator` that produces a structured report when network is unavailable, including a `LIVE_DATA_VALIDATION_REQUIRED` flag.
+- Adding an `acquisition-validator` agent that runs from a non-sandbox environment to live-test fetcher URLs.
+- Updating the `fetcher-author` skill to mandate an `_ACQUISITION_PLACEHOLDER` class attribute on fetchers whose URLs have never been live-validated.
+
+### 6.4 The 2025 SSAP 43R schema break
+
+CHANGELOG PR #16 L126-134 documents: "Starting with 2024 year-end filings (filed March 2025), Schedule D Part 1 splits into Section 1 (issuer credit obligations: corporate bonds, Treasuries) and Section 2 (asset-backed securities: CLOs, MBS). CLOs previously in Schedule D Part 1 may now appear in Section 2 or be reclassified to Schedule BA." The fetcher's `_classify_security()` does not dispatch on statement year. This is explicitly future work; not Phase 1-blocking but will become an issue when historical-backfill (Phase 2) crosses the 2024/2025 boundary.
+
+### 6.5 Pending work blocking Phase 1 closure
+
+The minimal critical path to Phase 1 closure:
+
+1. **F1 remediation** (Stage 3 of plan): disambiguate project plan §1.1, invert source/target in 9 fetchers, update their tests, add an end-to-end conservation-validation test. Estimated effort: 2–3 days.
+
+2. **METHODOLOGY.md** (Stage 9): draft Phase 1 sections. Estimated effort: 1 day.
+
+3. **Placeholder URL remediation** (Stage 3): replace NAIC Schedule S/D placeholder URLs with real per-state portal paths (Iowa IID structure must be investigated from a network-enabled environment); add integration tests gated by `@pytest.mark.integration`. Estimated effort: 3–5 days assuming Iowa IID provides a path.
+
+4. **Unverified-URL live validation** (Stage 4): test SEC 13F, ADV, N-MFP fetchers against EDGAR from non-sandbox. Estimated effort: 1 day each.
+
+5. **Reference quarter 2024-Q4 end-to-end** (Stage 6): run all 10 fetchers against live data; capture all ArcFacts; review unmapped registries; promote canonical mappings. Estimated effort: 2 days.
+
+6. **Reconstruction implementation** (Stage 7): `max_entropy`, `min_density`, `solver`. Estimated effort: 1 week.
+
+7. **Sankey visualization** (Stage 8): initial 2024-Q4 render. Estimated effort: 1–2 days.
+
+8. **PHASE_GATES.md check-offs** (Stage 1): mechanical update of closed criteria. Estimated effort: 30 minutes.
+
+9. **Phase 1 closure ceremony** (Stage 10): phase-gate-closer skill verification + user confirmation. Estimated effort: 1 day.
+
+**Total minimum critical path: ~3 weeks of focused work in a non-sandbox environment**, contingent on placeholder-URL investigation yielding viable acquisition paths.
+
+---

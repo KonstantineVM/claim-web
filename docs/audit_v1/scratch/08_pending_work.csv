@@ -1,0 +1,32 @@
+file,line,marker,description,classification
+TODO.md,L20,Now,"claimweb.reconstruct.max_entropy — spawn literature-checker against Upper (2004)",Active development (paused at budget cap; resumes next session)
+TODO.md,L24,Next-1,Reference quarter 2024-Q4 acquired end-to-end with all Phase 1 fetchers,Active development (blocked on F1 remediation + placeholder URLs)
+TODO.md,L25,Next-2,claimweb.reconstruct.min_density — spawn literature-checker against Anand-Craig-von Peter (2015),Active development (queued)
+TODO.md,L26,Next-3,claimweb.reconstruct.solver — bracketing harness,Active development (queued)
+TODO.md,L27,Next-4,Initial Sankey visualization for 2024-Q4,Active development (queued)
+TODO.md,L28,Next-5,2024-Q4 reconstructed via both methods; output in data/output/network/2024-Q4/v1/,Active development (queued)
+TODO.md,L29,Next-6,Phase 1 sections of methodology paper drafted in docs/METHODOLOGY.md,Active development (queued; PROMISED-NOT-DELIVERED file)
+TODO.md,L30,Next-7,Close Phase 1 — phase-gate-closer skill,Active development (queued)
+docs/PHASE_GATES.md,L25,Phase1-criterion,Reference quarter 2024-Q4 acquired end-to-end,Open (blocked on F1 + placeholder URLs + Phase 1 reconstruction)
+docs/PHASE_GATES.md,L28,Phase1-criterion,Maximum-entropy reconstruction implemented + converges on 2024-Q4,Open (stub state)
+docs/PHASE_GATES.md,L29,Phase1-criterion,Minimum-density reconstruction implemented + converges,Open
+docs/PHASE_GATES.md,L30,Phase1-criterion,solver.py harness produces bracketed SolvedNetwork,Open
+docs/PHASE_GATES.md,L31,Phase1-criterion,Conservation-law checker verifies all 4 laws on 2024-Q4,Open (will fail without F1 remediation)
+docs/PHASE_GATES.md,L32,Phase1-criterion,Initial Sankey visualization,Open
+docs/PHASE_GATES.md,L33,Phase1-criterion,Methodology paper outline in docs/METHODOLOGY.md,Open (PROMISED-NOT-DELIVERED)
+CHANGELOG.md,L65-68 PR#17,Subagent failure,EDGAR unreachable from sandbox; sec_13f implementation from documentation only,Subagent-failure-orphan (impl proceeded but never live-validated)
+CHANGELOG.md,L122-123 PR#16,Placeholder disclosure,naic_schedule_d Iowa IID and NAIC CIS URLs are approximations,Placeholder-acknowledgment
+CHANGELOG.md,L126-134 PR#16,Future work,2025 SSAP 43R schema break documented; parser versioning is future work,Active development (Phase 2)
+CHANGELOG.md,L210-214 PR#14,Subagent failure,naic_schedule_s data-source-investigator ran out of turns; impl from project plan §10.3,Subagent-failure-orphan + placeholder-acknowledgment
+CHANGELOG.md,L283-292 PR#13,Subagent failure,sec_adv data-source-investigator ran out of turns,Subagent-failure-orphan
+CHANGELOG.md,L353-355 PR#12,Subagent failure,sec_nmfp data-source-investigator unable to fetch live EDGAR,Subagent-failure-orphan
+CHANGELOG.md,L66 (current entry),Next-item,"Next: claimweb.reconstruct.max_entropy (spawn literature-checker against Upper 2004)",Active development (current Now)
+claimweb/,grep TODO/FIXME/HACK/XXX,0 matches,No code-resident TODOs,Clean
+claimweb/registry/unmapped/,(not present),Runtime registry,Created at runtime by fetchers when unmapped entities found; absent because no fetcher has run against live data,Awaiting first end-to-end run
+literature-checker subagent,never completed,Process gap,Should fire before max_entropy and min_density per skill,Process improvement (Stage 2)
+documentation-curator subagent,never invoked,Process gap,Should fire at phase transitions per skill description; zero CHANGELOG mentions,Process improvement (Stage 2)
+data-source-investigator,3 of 9 runs failed,Reliability,naic_schedule_s/sec_adv ran out of turns; sec_nmfp network-blocked; sec_13f network-blocked,Process improvement (Stage 2 — add documentation-only mode)
+CLAIM-WEB project plan §1.1,internal contradiction,Methodological,Two readings (issuer→holder vs $x_{ij}$ index) yield opposite arc directions,Active remediation (Stage 3 — disambiguate)
+CLAIM-WEB project plan §3.2,internal contradiction,Methodological,Prose "operating entities point to controlling parent" vs example "Apollo→Athene" — ambiguous G3 direction,Active remediation (Stage 1 — clarify)
+docs/PHASE_GATES.md,L17-26 marked [ ],Stale documentation,10+ Phase 1 criteria closed but checkboxes unchecked,Documentation drift (Stage 1)
+TODO.md Done section,7 entries with branch-side SHAs,Documentation drift,Hashes don't match main commit SHAs,Documentation drift (Stage 1)
