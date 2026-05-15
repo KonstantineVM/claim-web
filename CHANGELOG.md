@@ -24,6 +24,63 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — fetcher: FRB Enhanced Financial Accounts FABS daily dataset
+
+- **What:** Implemented `claimweb/fetchers/frb_efa_fabs.py` — the
+  `FrbEfaFabsFetcher` for the FRB Enhanced Financial Accounts FABS dataset
+  (project plan §10.9).  Full public interface matches `BaseFetcher` contract:
+  - `list_available_periods()` — returns sorted list of quarters available in
+    the cached daily time-series file.
+  - `acquire(period)` — downloads `fabs-chart-data-historical.txt` from the FRB
+    with a 1-day cache window; returns a `RawDataHandle`.
+  - `parse(handle)` — reads the daily CSV, aggregates to quarterly end-of-period
+    snapshots (last available date ≤ quarter-end), converts from billions to
+    millions, and emits `ArcFact` records for mapped US-issuer columns only.
+  - `validate(facts)` — checks non-negative amounts, plausibility floor ($10B),
+    and cross-checks sub-component sum against the FABS (US) total (30% tolerance
+    for FABR gap).
+  Column mapping (all `ArcClass.A2`, `DataQualityFlag.DIRECT_MEASURED`,
+  `measurement_basis="stock_eop"`):
+  - `"fabs (us)"` → `sector:fabn_spv` → `z1:all_holders` (Law 3 constraint)
+  - `"fabn - medium-term (us)"` → `sector:fabn_spv` → `efa:fabn_mt_holders`
+  - `"fabn - short-term (us)"` → `sector:fabn_spv` → `efa:fabn_st_holders`
+  - `"fabn - extendibles (us)"` → `sector:fabn_spv` → `efa:xfabs_holders`
+    (XFABS — the 2007 run instrument; alternative name "fabn - putable" also
+    handled)
+  - `"fabcp (us)"` → `sector:fabn_spv` → `efa:fabcp_holders` (quarterly-only;
+    NA on non-quarter-end dates — parser skips blanks correctly)
+  Helper functions: `_parse_date` (ISO + M/D/YYYY), `_date_to_period`,
+  `_quarter_end_date`, `_parse_fabs_csv` (header-detection, NA handling),
+  `_aggregate_to_quarters` (last-date-in-period selection).
+  Fixture: `tests/fixtures/frb_efa_fabs/fabs-chart-data-historical.txt` — 7
+  daily rows covering 2024-Q3 and 2024-Q4 with FABCP NA on non-quarter-end dates.
+  Test file: `tests/unit/test_frb_efa_fabs.py` — 98 tests (3 property-based via
+  hypothesis: schema compliance, billion-to-million conversion, clean-report
+  invariant); gate green with 636 total passing.
+- **Why:** Phase 1 fetcher coverage (project plan §10.9).  The EFA FABS dataset
+  provides the aggregate A2 arc weight (FABS outstanding) as a sectoral constraint
+  (Law 3) and a sanity check against the SPV-level reconstruction.  The XFABS
+  (Extendibles) sub-series is the key instrument for the 2007-Q3 validation
+  episode.
+- **Result:** `claimweb/fetchers/frb_efa_fabs.py`,
+  `tests/fixtures/frb_efa_fabs/fabs-chart-data-historical.txt`,
+  `tests/fixtures/frb_efa_fabs/__init__.py`,
+  `tests/unit/test_frb_efa_fabs.py`.
+- **Failed:** (1) Initial property tests used `tmp_path` (function-scoped pytest
+  fixture) inside `@given` — hypothesis health check blocked this; fixed by
+  switching to `tempfile.TemporaryDirectory` inside each hypothesis test.
+  (2) `test_validate_negative_not_error_level` tested a negative value for the
+  total column — this also triggers `FABS_TOTAL_IMPLAUSIBLE` error (−5000 < 10000
+  floor), not just a warning; fixed by having a positive total and a negative
+  sub-component.  (3) `test_property_parse_run_returns_list` used
+  `@given(st.just("2024-Q4"))` — pytest treated the hypothesis arg as a fixture
+  name; fixed by removing the hypothesis decorator.
+  (4) Data-source-investigator confirmed: FABCP is quarterly-only (daily cells are
+  NA); file has metadata header rows before the `Date` row; values are in
+  **billions** (not millions — easy to miss given Z.1 DDP serves millions).
+- **Next:** `claimweb.fetchers.sec_nmfp` — SEC Form NMFP MMF holdings (project
+  plan §10.5).
+
 ### 2026-05-15 — constraints: compile — aggregate sparse linear system
 
 - **What:** Implemented `claimweb/constraints/compile.py` — the aggregator
