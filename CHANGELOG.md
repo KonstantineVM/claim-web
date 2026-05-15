@@ -24,6 +24,60 @@ After each meaningful unit of work, append an entry, commit, and push.
 
 <!-- Append entries here. Newest first. Example below — delete after first real entry. -->
 
+### 2026-05-15 — constraints: flow-of-funds transactions-vs-positions (Law 4)
+
+- **What:** Implemented `claimweb/constraints/flow_funds.py` — Law 4 checker
+  per project plan §1.1.  Full public interface:
+  - `FlowKey` — `tuple[str, str, str]` identifying one arc:
+    `(source_node_id, target_node_id, instrument_class_value)`.
+  - `FlowTerms` — `dict[FlowKey, Decimal]` — net transactions *F* in
+    millions USD, sourced from Z.1 F.tables.
+  - `RevaluationTerms` — `dict[FlowKey, Decimal]` — mark-to-market
+    revaluation *R* in millions USD; absent keys default to zero
+    (book-value arcs carry no revaluation).
+  - `FlowFundsViolation` / `FlowFundsResult` — typed result objects with
+    full per-arc diagnostic: `amount_from`, `amount_to`, `flow_term`,
+    `revaluation_term`, `expected_change`, `actual_change`, `residual`.
+  - `build_flow_funds_rows(facts_from, facts_to, *, period_from, period_to,
+    flow_terms, revaluation_terms)` — compiles one `LinearConstraint` per
+    arc in *flow_terms*.  Each constraint spans two periods:
+    `x(t+1) - x(t) = F + R`.  The `matrix_row` carries `ArcKey`s from
+    both *period_from* (coefficient −1) and *period_to* (coefficient +1).
+    `DIRECT_MEASURED` arcs in either period fold into the RHS as constants;
+    all other arcs remain as variables.  If no arc data exists for a period,
+    it is treated as zero (new or terminated arc).
+  - `check_flow_funds(network_from, network_to, *, flow_terms,
+    revaluation_terms, tol)` — directly verifies Law 4 on a pair of
+    `NetworkState` objects; returns `FlowFundsResult` with `arc_count`
+    (union of both networks) and `checked_count` (only arcs in flow_terms).
+  - `_provenance_arc(provenance)` — parses
+    *(source, target, instrument, period_from, period_to)* from a
+    provenance string (used by property tests).
+  Default tolerance: 0.1 % relative with $0.1 M absolute floor.
+  Test file: `tests/unit/test_flow_funds.py` — 44 tests (5 property-based
+  via hypothesis: soundness×2, completeness, stability, independence,
+  provenance round-trip; 39 unit tests covering empty inputs, coefficient
+  structure, `DIRECT_MEASURED` folding for each period and both periods,
+  absent-arc handling, flow/revaluation term arithmetic, multi-arc/instrument
+  constraints, period filtering, tolerance thresholds, arc_count vs
+  checked_count, provenance format, Decimal precision, ArcKey format,
+  non-adjacent periods).  481 total pass; precommit gate green.
+- **Why:** Phase 1 constraint checkers; completes the four conservation laws
+  needed before `compile.py` assembles the full sparse linear system for
+  the reconstruction solver.
+- **Result:** `claimweb/constraints/flow_funds.py`,
+  `tests/unit/test_flow_funds.py`
+- **Failed:** Two hypothesis test bugs fixed:
+  (1) `valid_flow_network_pair` strategy forgot to pass `cls=instr` to
+  `_make_arc`, causing arcs to default to A3 while flow_terms used the
+  drawn instrument — discovered by completeness and soundness failures.
+  (2) Completeness test added perturbed arc with default `cls=ArcClass.A3`
+  instead of the correct instrument class — fixed by passing
+  `cls=ArcClass(instr_val)`.  Also installed hypothesis and all project
+  dependencies into the `uv`-managed pytest environment (previously missing).
+- **Next:** `claimweb.constraints.compile` — aggregates all four laws into
+  a single sparse linear system.
+
 ### 2026-05-15 — constraints: Z.1 sectoral aggregate (Law 3)
 
 - **What:** Implemented `claimweb/constraints/sectoral.py` — Law 3 checker
