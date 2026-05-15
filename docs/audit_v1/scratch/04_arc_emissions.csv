@@ -1,0 +1,32 @@
+fetcher_id,source_pattern,target_pattern,arc_class,data_quality_flag,measurement_basis,evidence
+fhlb_combined,insurer:{slug} or insurer:{canonical},fhlb:system,A3,DIRECT_MEASURED,stock_eop,fhlb_combined.py:461 aggregate; L530 named
+fhlb_combined,insurer:{canonical},fhlb:system,A3,DIRECT_MEASURED,stock_eop,fhlb_combined.py top-10 advance users table
+frb_efa_fabs,sector:fabn_spv,z1:all_holders,A2,DIRECT_MEASURED,stock_eop,frb_efa_fabs.py:101
+frb_efa_fabs,sector:fabn_spv,efa:fabn_mt_holders,A2,DIRECT_MEASURED,stock_eop,frb_efa_fabs.py:103
+frb_efa_fabs,sector:fabn_spv,efa:fabn_st_holders,A2,DIRECT_MEASURED,stock_eop,frb_efa_fabs.py:105
+frb_efa_fabs,sector:fabn_spv,efa:xfabs_holders,A2,DIRECT_MEASURED,stock_eop,frb_efa_fabs.py:107 (extendibles) + L109 (putable alias)
+frb_efa_fabs,sector:fabn_spv,efa:fabcp_holders,A2,DIRECT_MEASURED,stock_eop,frb_efa_fabs.py:111
+naic_schedule_d,issuer:us_treasury,insurer:naic:{code},A10,DIRECT_MEASURED,stock_eop,naic_schedule_d.py:104-110 docstring + L731
+naic_schedule_d,issuer:agency:{name},insurer:naic:{code},A10,DIRECT_MEASURED,stock_eop,naic_schedule_d.py
+naic_schedule_d,issuer:clo:{cusip_prefix},insurer:naic:{code},A7,DIRECT_MEASURED,stock_eop,naic_schedule_d.py
+naic_schedule_d,issuer:corp:{cusip_prefix},insurer:naic:{code},A12,DIRECT_MEASURED,stock_eop,naic_schedule_d.py
+naic_schedule_d,issuer:corp:{name},insurer:naic:{code},A12,PROXY,stock_eop,naic_schedule_d.py (par-value fallback when book value absent)
+naic_schedule_s,insurer:naic:{code} [CEDENT — INVERTED PER §1.1],reinsurer:bermuda:{slug} or reinsurer:cayman:{slug} or reinsurer:{country}:{slug} or reinsurer:name:{slug} or insurer:naic:{code} [REINSURER],A6,DIRECT_MEASURED,stock_eop,naic_schedule_s.py:33-34 docstring + L648-651 ArcFact construction. **METHODOLOGY DEFECT** — per project plan §1.1 source should be reinsurer (issuer); target should be cedent (holder).
+sec_13f,corp:cusip:{cusip6} or corp:name:{slug},aam:cik:{cik10},A11,DIRECT_MEASURED,stock_eop,sec_13f.py:19-22 + L306+L332 (sshPrnamtType == SH → A11)
+sec_13f,corp:cusip:{cusip6} or corp:name:{slug},aam:cik:{cik10},A12,DIRECT_MEASURED,stock_eop,sec_13f.py:23 + L306 (sshPrnamtType == PRN → A12)
+sec_adv,aam:crd:{crd},insurer:{...} or aam:{...} or fund:{...} or broker:{...} or bank:{...} or entity:{...},A11,PROXY,stock_eop,sec_adv.py:31 docstring + L522-525 (RAUM-based amount; PROXY because RAUM ≠ ownership stake value)
+sec_nmfp,spv:cusip:{cusip} or spv:name:{slug},mmf:{series_id} or mmf:cik:{cik10},A2,DIRECT_MEASURED,stock_eop,sec_nmfp.py:21 docstring + L379-382
+sec_xbrl,z1:aggregate,{entity_id} [insurer:cik:],A12,DIRECT_MEASURED,stock_eop,sec_xbrl.py:125 (Assets tag)
+sec_xbrl,{entity_id},z1:aggregate,A12,DIRECT_MEASURED,stock_eop,sec_xbrl.py:129 (Liabilities tag)
+sec_xbrl,{entity_id},z1:equity_holders,A12,DIRECT_MEASURED,stock_eop,sec_xbrl.py:133 (StockholdersEquity) and L136 (StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest)
+sec_xbrl,{entity_id},sector:fhlb,A3,DIRECT_MEASURED,stock_eop,sec_xbrl.py:141 (AdvancesFromFederalHomeLoanBanks). Note source=insurer (issuer of advance liability) — consistent with §1.1
+sec_xbrl,{entity_id},sector:repo_dealers,A4,DIRECT_MEASURED,stock_eop,sec_xbrl.py:146 (SecuritiesSoldUnderAgreementsToRepurchase)
+sec_xbrl,{entity_id},sector:sec_lending_counterparty,A5,DIRECT_MEASURED,stock_eop,sec_xbrl.py:151 (PayablesForCollateralUnderSecuritiesLoanedAndOtherTransactions)
+sec_xbrl,{entity_id},z1:all_holders,A1,DIRECT_MEASURED,stock_eop,sec_xbrl.py:157 (PolicyholderAccountBalance/PolicyholderContractDeposits)
+z1,sector:life_insurance_companies,z1:aggregate (or vice versa per row),A12,DIRECT_MEASURED,stock_eop,z1.py:111 (FL543069905.Q) + L123 (life-insurance side)
+z1,sector:depository_institutions,sector:life_insurance_companies,A9,DIRECT_MEASURED,stock_eop,z1.py:113
+z1,sector:money_market_funds,sector:life_insurance_companies,A8,DIRECT_MEASURED,stock_eop,z1.py:115
+z1,sector:gse,sector:life_insurance_companies,A10,DIRECT_MEASURED,stock_eop,z1.py:117
+z1,sector:corporate_bond_issuers,sector:life_insurance_companies,A12,DIRECT_MEASURED,stock_eop,z1.py:119
+z1,sector:fabn_spv,sector:life_insurance_companies,A2,DIRECT_MEASURED,stock_eop,z1.py:121
+z1,sector:life_insurance_companies,sector:fhlb,A3,DIRECT_MEASURED,stock_eop,z1.py:125 — confirms §1.1 convention (issuer=insurer → holder=fhlb is wrong wording; should be source=insurer is the issuer of advance liability; FHLB holds the advance asset; this row reads source=life_insurance_companies target=sector:fhlb which IS issuer→holder under §1.1)

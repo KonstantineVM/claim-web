@@ -1,0 +1,48 @@
+path,line_count,purpose,exports,imports_internal,imports_external,entry_points,fetcher_attrs
+claimweb/__init__.py,25,Package init; Decimal precision setup,(none),(none),decimal,(none),
+claimweb/abm/__init__.py,19,ABM subpackage docstring stub,(none),(none),(none),(none),
+claimweb/abm/agents/__init__.py,1,Agents subpackage stub,(none),(none),(none),(none),
+claimweb/abm/calibration.py,16,ABM calibration docstring stub,(none),(none),(none),(none),
+claimweb/abm/scenarios.py,16,ABM scenarios docstring stub,(none),(none),(none),(none),
+claimweb/abm/simulator.py,19,ABM simulator docstring stub (Bookstaber-Paddrik-Tivnan),(none),(none),(none),(none),
+claimweb/api/__init__.py,12,API subpackage stub,(none),(none),(none),(none),
+claimweb/cascade/__init__.py,18,Cascade subpackage docstring,(none),(none),(none),(none),
+claimweb/cascade/contingent.py,16,Banerjee-Feinstein contingent payments stub,(none),(none),(none),(none),
+claimweb/cascade/debtrank.py,16,Battiston DebtRank stub,(none),(none),(none),(none),
+claimweb/cascade/eisenberg_noe.py,25,Eisenberg-Noe clearing-vector stub,(none),(none),(none),(none),
+claimweb/cascade/fire_sale.py,23,Cont-Schaanning fire-sale stub,(none),(none),(none),(none),
+claimweb/cascade/multi_constraint.py,17,Coen-Lepore-Schaanning multi-constraint stub,(none),(none),(none),(none),
+claimweb/constraints/__init__.py,22,Constraints subpackage docstring,(none),(none),(none),(none),
+claimweb/constraints/compile.py,337,Assembles all four laws into sparse linear system,"LawStats, CompiledSystem, compile_constraints",constraints.{kcl|double_entry|sectoral|flow_funds},(none),(none),
+claimweb/constraints/double_entry.py,319,Law 2 build and check,"DoubleEntryViolation, DoubleEntryResult, build_double_entry_rows, check_double_entry, InstrumentTotals",constraints.kcl (shared types),decimal,(none),
+claimweb/constraints/flow_funds.py,421,Law 4 build and check,"FlowKey, FlowTerms, RevaluationTerms, FlowFundsViolation, FlowFundsResult, build_flow_funds_rows, check_flow_funds",constraints.kcl,decimal,(none),
+claimweb/constraints/kcl.py,444,Law 1 build and check; shared types,"ArcKey, LinearConstraint, ConstraintSet, NodeBalance, NetworkState, KCLViolation, KCLResult, build_kcl_rows, check_kcl","fetchers.base (ArcClass, DataQualityFlag)",decimal,(none),
+claimweb/constraints/prior.py,13,Soft entity-type-compatibility regularizer stub,(none),(none),(none),(none),
+claimweb/constraints/sectoral.py,384,Law 3 build and check,"SectorMap, SectoralTotals, SectoralViolation, SectoralResult, build_sectoral_rows, check_sectoral",constraints.kcl,decimal,(none),
+claimweb/fetchers/__init__.py,29,Fetcher subpackage exports,"FhlbCombinedFetcher, FrbEfaFabsFetcher, NaicScheduleDFetcher, NaicScheduleSFetcher, Sec13fFetcher, SecAdvFetcher, SecNmfpFetcher, SecXbrlFetcher, Z1Fetcher",fetchers.*,(none),(none),
+claimweb/fetchers/base.py,404,BaseFetcher ABC + ArcFact + DataQualityFlag enum + Period + RawDataHandle + ValidationReport,"Period, ArcClass, DataQualityFlag, RawDataHandle, ArcFact, ValidationIssue, ValidationReport, BaseFetcher",(none),"decimal, hashlib, re, abc, dataclasses, enum, pathlib",(none),
+claimweb/fetchers/fhlb_combined.py,637,FHLB Combined Financial Report fetcher,FhlbCombinedFetcher,fetchers.base,"httpx, pdfplumber, beautifulsoup4","(if __name__: no)","source_id=fhlb_combined, cadence=quarterly"
+claimweb/fetchers/frb_efa_fabs.py,473,FRB EFA FABS daily dataset fetcher,FrbEfaFabsFetcher,fetchers.base,"httpx",(none),"source_id=frb_efa_fabs, cadence=quarterly, cache=1 day"
+claimweb/fetchers/naic_schedule_d.py,1000,NAIC Schedule D Part 1 long-term bond holdings,NaicScheduleDFetcher,fetchers.base,"httpx, csv",(none),"source_id=naic_schedule_d, cadence=annual, cache=365 days"
+claimweb/fetchers/naic_schedule_s.py,888,NAIC Schedule S reinsurance ceded,NaicScheduleSFetcher,fetchers.base,"httpx, csv",(none),"source_id=naic_schedule_s, cadence=annual, cache=365 days"
+claimweb/fetchers/sec_13f.py,749,SEC Form 13F institutional holdings,Sec13fFetcher,fetchers.base,"httpx, lxml",(none),"source_id=sec_13f, cadence=quarterly, cache=90 days"
+claimweb/fetchers/sec_adv.py,719,SEC Form ADV investment adviser registrations,SecAdvFetcher,fetchers.base,"httpx, beautifulsoup4, csv, zipfile",(none),"source_id=sec_adv, cadence=quarterly (annually filed), cache=90 days"
+claimweb/fetchers/sec_nmfp.py,727,SEC Form N-MFP MMF holdings,SecNmfpFetcher,fetchers.base,"httpx, lxml",(none),"source_id=sec_nmfp, cadence=monthly, cache=30 days"
+claimweb/fetchers/sec_xbrl.py,506,SEC XBRL companyfacts for LIFE_INSURERS panel,SecXbrlFetcher,fetchers.base,"httpx",(none),"source_id=sec_xbrl, cadence=quarterly, cache=14 days"
+claimweb/fetchers/z1.py,530,FRB Z.1 Financial Accounts (L.116/L.121/L.207/L.208/L.211/L.226/L.227),Z1Fetcher,fetchers.base,"httpx",(none),"source_id=z1, cadence=quarterly, cache=30 days"
+claimweb/multiplier/__init__.py,14,Multiplier subpackage stub,(none),(none),(none),(none),
+claimweb/normalize/__init__.py,17,Normalize subpackage stub,(none),(none),(none),(none),
+claimweb/reconstruct/__init__.py,14,Reconstruct subpackage docstring,(none),(none),(none),(none),
+claimweb/reconstruct/max_entropy.py,21,Upper 2004 ME stub — docstring only,(none),(none),(none),(none),
+claimweb/reconstruct/min_density.py,18,Anand-Craig-von Peter 2015 MD stub,(none),(none),(none),(none),
+claimweb/reconstruct/solver.py,20,Reconstruction bracket harness stub,(none),(none),(none),(none),
+claimweb/reconstruct/validate.py,15,Reconstruction validate stub,(none),(none),(none),(none),
+claimweb/validation/__init__.py,14,Validation subpackage stub,(none),(none),(none),(none),
+claimweb/validation/ep1_2007_xfabs.py,12,Episode 1 2007 XFABS run stub,(none),(none),(none),(none),
+claimweb/validation/ep2_2008_aig_seclending.py,13,Episode 2 2008 AIG sec-lending stub,(none),(none),(none),(none),
+claimweb/validation/ep3_2020_covid_stress.py,15,Episode 3 March 2020 stress stub,(none),(none),(none),(none),
+claimweb/visualize/__init__.py,14,Visualize subpackage stub,(none),(none),(none),(none),
+claimweb/visualize/cascade_dag.py,11,Cascade-DAG renderer stub,(none),(none),(none),(none),
+claimweb/visualize/multiplier_timeseries.py,11,Multiplier time-series renderer stub,(none),(none),(none),(none),
+claimweb/visualize/network_link.py,11,Node-link renderer stub,(none),(none),(none),(none),
+claimweb/visualize/sankey.py,17,Sankey renderer stub,(none),(none),(none),(none),

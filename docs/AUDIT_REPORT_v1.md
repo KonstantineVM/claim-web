@@ -161,3 +161,109 @@ The single Contradicted finding that requires *action* (not just documentation u
 **Phase 1 closes with one substantive methodological defect (F1 — arc-direction inversion in Schedule S), three live-acquisition gaps (F2 — Schedule S, Schedule D, 13F), and four documentation-drift items (F3, F4, F5, F6).** The remaining unverifiable claims (live-data correctness, runtime-pass status) cannot be resolved without execution and are routed to the remediation plan's Stage 4 (live-data validation in a non-sandbox environment).
 
 ---
+
+## Phase 2 — Architectural Census
+
+### 2a. Production Code Inventory and Arc-Emission Ground Truth
+
+`docs/audit_v1/scratch/03_file_inventory.csv` is the per-file production-code census (47 rows; one per Python file under `claimweb/`). `docs/audit_v1/scratch/04_arc_emissions.csv` is the arc-emission ground truth (31 rows; one per `(fetcher, source_pattern, target_pattern, arc_class)` tuple emitted by `parse()`). The narrative below summarizes the structural facts and flags the patterns that propagate to downstream sections.
+
+#### 2a.1 Subpackage totals
+
+| Subpackage | Files | LOC | Role | Phase |
+|---|---:|---:|---|---|
+| `claimweb/` (root) | 1 | 25 | Package init; Decimal precision setup | 1 |
+| `fetchers/` | 11 | 6,662 | 10 concrete fetchers + base ABC | 1 |
+| `constraints/` | 6 | 1,940 | Laws 1–4 + compile + prior | 1 |
+| `reconstruct/` | 5 | 88 | Stubs only | 1 (planned) |
+| `cascade/` | 6 | 95 | Stubs only | 2 (planned) |
+| `abm/` | 5 | 71 | Stubs only | 3 (planned) |
+| `visualize/` | 5 | 65 | Stubs only | 1 (Sankey) + 2/3 |
+| `validation/` | 4 | 54 | Stubs only | 3 |
+| `multiplier/`, `normalize/`, `api/` | 3 | 43 | `__init__` only | 2/3 |
+
+Total: 46 Python files, 9,061 LOC. The ratio of substance-code (fetchers + constraints) to scaffolding (everything else) is 8,602 : 459 — 95% of LOC is in the two subpackages that have shipped Phase 1 work. This matches the project plan's Phase 1 scope.
+
+#### 2a.2 Fetchers — public-interface census
+
+All 10 concrete fetchers subclass `BaseFetcher` and declare the mandatory `source_id` and `cadence` class attributes. The cadences match project plan §10:
+
+| Fetcher | `source_id` | `cadence` | Cache lifetime | LOC |
+|---|---|---|---:|---:|
+| `fhlb_combined` | `fhlb_combined` | quarterly | (default; not declared as constant) | 637 |
+| `frb_efa_fabs` | `frb_efa_fabs` | quarterly | 1 day | 473 |
+| `naic_schedule_d` | `naic_schedule_d` | annual | 365 days | 1,000 |
+| `naic_schedule_s` | `naic_schedule_s` | annual | 365 days | 888 |
+| `sec_13f` | `sec_13f` | quarterly | 90 days | 749 |
+| `sec_adv` | `sec_adv` | quarterly | 90 days | 719 |
+| `sec_nmfp` | `sec_nmfp` | monthly | 30 days | 727 |
+| `sec_xbrl` | `sec_xbrl` | quarterly | 14 days | 506 |
+| `z1` | `z1` | quarterly | 30 days | 530 |
+
+`base.py` (404 LOC) defines: `Period` (validated `YYYY-Q[1-4]`), `ArcClass` (A1–A12 enum), `DataQualityFlag` (7-value enum with documented priority ordering DIRECT_MEASURED > DOUBLE_ENTRY_INFERRED > MARGINAL_INFERRED > SECTORAL_DISAGGREGATED > PROXY > MODEL_ESTIMATE > UNOBSERVED — matches the CLAUDE.md rule at `.claude/rules/data-quality-flags.md`), `RawDataHandle`, `ArcFact` (immutable Decimal dollar amounts; mandatory provenance; `to_dict`/`from_dict`), `ValidationIssue`/`ValidationReport`, and `BaseFetcher` ABC with `__init_subclass__` guard enforcing `source_id` and `cadence`.
+
+NAIC Schedule D at 1,000 LOC and NAIC Schedule S at 888 LOC are the two largest fetchers — both because they need per-state-portal dispatch logic for acquisition (Iowa IID vs NAIC CIS vs Indiana vs Tennessee) and per-row classification (CUSIP-prefix dispatch, type-code dispatch, description-pattern dispatch for security type). The CHANGELOG claims Schedule D is 887 LOC; the actual file is 1,000 LOC. The 113-LOC delta suggests post-PR edits (linting fixes, format adjustments) that were not back-propagated to the CHANGELOG entry — benign.
+
+#### 2a.3 Arc-emission ground truth
+
+Twelve of the project plan §4 arc classes A1–A12 are addressable in Phase 1; nine are reached by at least one shipped fetcher. The coverage matrix:
+
+| Arc | Class meaning | Fetchers that emit | Source prefix(es) | Target prefix(es) |
+|---|---|---|---|---|
+| A1 | Funding agreements | `sec_xbrl` | `insurer:cik:{cik}` (issuer) | `z1:all_holders` |
+| A2 | FABNs (FABN/FABCP/XFABS) | `frb_efa_fabs`, `sec_nmfp`, `z1` | `sector:fabn_spv` or `spv:cusip:` | `efa:*_holders`, `mmf:`, `sector:life_insurance_companies` |
+| A3 | FHLB advances | `fhlb_combined`, `sec_xbrl`, `z1` | `insurer:naic:` or `insurer:slug` or `{entity_id}` | `fhlb:system` or `sector:fhlb` |
+| A4 | Repo | `sec_xbrl` | `{entity_id}` | `sector:repo_dealers` |
+| A5 | Sec-lending cash collateral | `sec_xbrl` | `{entity_id}` | `sector:sec_lending_counterparty` |
+| A6 | Reinsurance | `naic_schedule_s` | **`insurer:naic:` (cedent)** | **`reinsurer:` (reinsurer)** |
+| A7 | CLO mezzanine | `naic_schedule_d` | `issuer:clo:{cusip_prefix}` | `insurer:naic:{code}` |
+| A8 | MMF shares | `z1` | `sector:money_market_funds` | `sector:life_insurance_companies` |
+| A9 | Bank deposits | `z1` | `sector:depository_institutions` | `sector:life_insurance_companies` |
+| A10 | Government securities | `naic_schedule_d`, `z1` | `issuer:us_treasury`, `issuer:agency:{name}`, `sector:gse` | `insurer:naic:`, `sector:life_insurance_companies` |
+| A11 | Equity claims | `sec_13f`, `sec_adv` | `corp:cusip:{cusip6}`, `corp:name:`, `aam:crd:{crd}` | `aam:cik:{cik10}`, `insurer:`/`aam:`/`fund:`/`broker:`/`bank:`/`entity:` |
+| A12 | Other liabilities (residual) | `naic_schedule_d`, `sec_13f`, `sec_xbrl`, `z1` | various | various |
+
+**Coverage gaps (Phase 1):** No fetcher emits A6 from anyone but `naic_schedule_s`. No Bermuda-side companion fetcher exists for the offshore reinsurer node (project plan §10.12 `bma_register.py` is unbuilt). No fetcher addresses A11 from public-company 10-K equity-holder data (only AAM-side via 13F/ADV). A2 has three distinct fetchers but with disjoint coverage: `frb_efa_fabs` provides the aggregate (Law-3 boundary), `sec_nmfp` provides MMF-side per-CUSIP, `z1` provides sector-level — they should agree under Law 2 at the FABN aggregate, but no test currently enforces the cross-fetcher reconciliation.
+
+**Arc-direction conventions across fetchers.** Reading the file inventory shows the per-fetcher direction conventions explicit in code:
+
+- `fhlb_combined.py`: source = insurer (issuer of the FHLB-advance liability), target = `fhlb:system` (holder of the advance as asset). §1.1 ✓
+- `frb_efa_fabs.py`: source = `sector:fabn_spv` (issuer of FABN/FABCP), target = `efa:*_holders` (the holder sector). §1.1 ✓
+- `naic_schedule_d.py:37-38, 731-732`: source = bond issuer, target = insurer holder. §1.1 ✓
+- `naic_schedule_s.py:33-34, 648-651`: source = U.S. cedent (the holder of the recoverable asset), target = reinsurer (the issuer of the recoverable obligation). **§1.1 ✗ INVERTED** — see Finding F1 in Phase 1.
+- `sec_13f.py:19-21, 332`: source = security issuer (`corp:cusip:`), target = AAM holder (`aam:cik:`). §1.1 ✓
+- `sec_adv.py:31, 522-525`: source = AAM parent (`aam:crd:`), target = controlled entity. This represents a G3 ownership arc per project plan §3.2; the convention "source = controlling parent, target = controlled affiliate" is the project's choice for G3 (project plan §3.2 says "operating entities point to their controlling parent" — meaning *target* = parent; the code does the opposite). Worth verifying in Phase 3c.
+- `sec_nmfp.py:21, 379-382`: source = SPV issuer, target = MMF holder. §1.1 ✓
+- `sec_xbrl.py:125-157`: mixed — for `Assets` (a tag whose value is "the entity's total assets"), the row is `(A12, z1:aggregate, {entity_id})` meaning the aggregate's "holding" is the entity's assets. The semantics here are not arc-like in the §1.1 sense — they are balance-sheet marginals. The fetcher emits these because Law 1 needs them as boundary terms. The downstream constraint compiler will need to recognize them differently from arcs; check `compile.py` integration.
+- `z1.py:111-125`: source/target use sector: prefixes; the FL543050005.Q series at L125 reads `source=sector:life_insurance_companies, target=sector:fhlb` for an A3 advance — which under §1.1 is correct (life insurer is the issuer of the advance liability; FHLB holds it as the asset).
+
+**Two additional convention questions to flag:**
+
+(a) **G3 ownership-arc direction.** Project plan §3.2 reads "operating entities point to their controlling parent" (i.e., affiliate → parent). `sec_adv.py:522-525` emits `source=aam:crd:{crd}` (the parent/AAM) → `target=related entity` (the affiliate). This is the opposite direction. Either the project plan is wrong about §3.2 or the code is. The CHANGELOG entry for PR #13 describes the direction as "AAM parent → affiliated insurer/IA/fund/bank" which agrees with the code. So the project plan §3.2 prose conflicts with both the code and the CHANGELOG. Methodological gap to surface.
+
+(b) **`sec_xbrl` balance-sheet marginals as arcs.** The `Assets` and `Liabilities` tags emit "arcs" between `z1:aggregate` and the entity. These are not arcs in the network-instrument sense; they are entity-level totals. The downstream KCL constraint builder (`kcl.py`) operates on `NodeBalance` records, not `ArcFact` records — so these XBRL emissions need to be transformed at the boundary. Whether the transformation exists in code is to be verified in Phase 2b (constraints integration).
+
+#### 2a.4 Constraints — public-interface census
+
+All four laws follow the same dual interface: `build_<law>_rows()` produces a `ConstraintSet` of `LinearConstraint` objects (consumed by `compile.py`); `check_<law>()` directly verifies a concrete `NetworkState` against the law (consumed by `scripts/check_conservation.py` per CLAUDE.md). `kcl.py` defines the shared types `ArcKey, LinearConstraint, ConstraintSet, NetworkState, NodeBalance` that every other constraint module imports.
+
+| Module | LOC | `build_*_rows` | `check_*` | Property tests |
+|---|---:|---|---|---:|
+| `kcl.py` | 444 | `build_kcl_rows(network: NetworkState) -> ConstraintSet` | `check_kcl(network, *, tol) -> KCLResult` | 5 |
+| `double_entry.py` | 319 | `build_double_entry_rows(facts, *, period, boundary_terms) -> ConstraintSet` | `check_double_entry(network, *, boundary_terms, tol) -> DoubleEntryResult` | 5 |
+| `sectoral.py` | 384 | `build_sectoral_rows(facts, *, period, sector_map, sectoral_totals) -> ConstraintSet` | `check_sectoral(network, *, sector_map, sectoral_totals, tol) -> SectoralResult` | 5 |
+| `flow_funds.py` | 421 | `build_flow_funds_rows(facts_from, facts_to, *, period_from, period_to, flow_terms, revaluation_terms) -> ConstraintSet` | `check_flow_funds(network_from, network_to, *, flow_terms, revaluation_terms, tol) -> FlowFundsResult` | 6 |
+| `compile.py` | 337 | `compile_constraints(network, *, boundary_terms, sector_map, sectoral_totals, network_from, flow_terms, revaluation_terms, include_nonnegativity) -> CompiledSystem` | n/a | 5 |
+| `prior.py` | 13 | (stub) | (stub) | 0 |
+
+Property tests cover (per the constraint-author skill): soundness (Law-satisfying networks satisfy compiled constraints), completeness (perturbations are detected), stability (DIRECT_MEASURED fold-into-RHS is correct), independence (each row references only the relevant entities). Total: 26 property tests across the 5 implementing modules. This exceeds the project plan's implicit floor (4 per law).
+
+`compile.py` makes Law 1 always-applied (KCL is structural), Laws 2/3/4 conditional on the caller supplying their respective boundary data (`boundary_terms`, `sector_map+sectoral_totals`, `network_from+flow_terms`). It rejects degenerate Law 4 inputs (same period for `network` and `network_from` — `ValueError`). Non-negativity is opt-in via the `include_nonnegativity` keyword (default True). The output `CompiledSystem` has `to_index()` (bijection from `ArcKey` to integer column index) and `summary()` (one-line human-readable report). This is consumed by the planned `claimweb.reconstruct.solver`.
+
+The `prior.py` module (13 LOC) is a docstring-only stub. Its planned interface (`entity_type_compatibility`, `build_prior_regularizer`) belongs to Phase 1's reconstruction stage. It's neither built nor scheduled in the current TODO.md Now/Next — the reconstruction sessions (max_entropy, min_density) will need to decide whether to use it.
+
+#### 2a.5 Reconstruct, cascade, abm, visualize, validation, multiplier, normalize, api — stub state
+
+All 24 files in these seven subpackages are docstring-only stubs between 11 and 25 LOC. Each docstring names the right academic reference (Upper 2004, Anand-Craig-von Peter 2015, Eisenberg-Noe 2001, Cont-Schaanning 2017, Coen-Lepore-Schaanning 2019, Banerjee-Feinstein 2019, Battiston et al. 2012, Bookstaber-Paddrik-Tivnan 2018) and lists the planned public interface signatures. No implementation exists; no tests exist. This is expected per the queued TODO.md state. The remediation plan addresses Phase 1 reconstruction (Stages 7–8); cascade, ABM, validation are Phase 2/3 scope.
+
+---
