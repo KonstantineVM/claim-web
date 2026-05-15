@@ -609,3 +609,120 @@ The current encoding works for KCL boundary terms (which need `(entity_id, side,
 - **Minor doc drift (3):** line-count claims, fred.py legacy name, 73-test count. Benign.
 
 ---
+
+## Phase 4 — Code Quality Assessment
+
+### 4a. Quantitative Quality Measures
+
+| Measure | Value | Notes |
+|---|---:|---|
+| Broad `except Exception` handlers | 3 | `sec_nmfp:495`, `sec_13f:492`, `sec_adv:384` — all wrap HTTP/network calls where any exception triggers cache miss; justifiable |
+| Bare `except:` (no type) | 0 | None |
+| `contextlib.suppress(Exception)` (catches everything) | 1 | `naic_schedule_s:770` (CSV fallback after JSON parse) — concerning but bounded scope |
+| `contextlib.suppress(<specific type>)` | 9 | Acceptable use after PR-time ruff SIM105 enforcement |
+| TODO / FIXME / HACK / XXX comments in `claimweb/` | **0** | Remarkably clean |
+| Files > 800 LOC | 2 | `naic_schedule_d.py` (1,000), `naic_schedule_s.py` (888) — both have per-state-portal dispatch logic |
+| Files > 500 LOC (production) | 7 | All 5 NAIC/SEC EDGAR fetchers + Z.1 + FHLB; reasonable given the scope |
+| Imports per fetcher | 9–14 | NAIC fetchers and SEC ADV are heaviest at 14 (csv + zipfile + httpx + lxml + etc.) |
+| Property test count (`@given`) across `tests/unit/` | 61 | Exceeds the implicit floor of 4 per law / 3 per fetcher |
+| Test coverage of stubs | 0 | Expected — stubs have no tests |
+
+The codebase is unusually clean for an autonomously-built 9,061-LOC project. Zero TODO/FIXME comments suggests the autonomous loop either resolved everything as it went or recorded incomplete items in CHANGELOG/TODO.md instead of code-resident comments — which is consistent with the CLAUDE.md authoring conventions.
+
+### 4b. Qualitative Correctness Spot-Checks
+
+Ten production modules were sampled deterministically (every fifth file, sorted alphabetically) and read for description-vs-code alignment. The spot-check surfaced one critical finding that elevates and reframes Phase 1 Finding F1.
+
+#### F1 (revised, severity raised to CRITICAL) — The arc-direction convention is split across the codebase
+
+Phase 1 F1 reported that `naic_schedule_s.py` inverts the arc direction relative to project plan §1.1's "directed edge from issuer j to holder i." Phase 4 spot-check of `claimweb/constraints/kcl.py` reveals the picture is more complex.
+
+**The kcl.py code uses the OPPOSITE convention from the project plan §1.1 prose.** The relevant code at `kcl.py:312-319`:
+
+```python
+if flag == DataQualityFlag.DIRECT_MEASURED:
+    # Outgoing arc is an asset (+); its known value reduces the
+    # unknown portion, so rhs -= amount.
+    # Incoming arc is a liability (−); its known value reduces the
+    # unknown portion, so rhs += amount.
+    if is_out:
+        rhs -= amount
+    if is_in:
+        rhs += amount
+```
+
+The code at line 304 sets `is_out = src == node_id`. At line 312-313 the comment says "Outgoing arc is an asset (+)" — i.e., when `src == node_id`, the arc is *that node's asset*. Translation: **source of an arc = asset holder; target of an arc = liability issuer**.
+
+The `test_kcl.py:139-143` synthetic-network builder confirms the same convention by setting `equity = out_sum - in_sum` at each node (assets - liabilities = equity; out_sum is treated as the asset side).
+
+**Project plan §1.1** has two readings within a single sentence:
+
+> "let $x_{ij}^k(t) \geq 0$ be the dollar volume of instrument $k$ that is held by $i$ as an asset and issued by $j$ as a liability at time $t$. This is the **arc weight** on the directed edge from issuer $j$ to holder $i$ for instrument $k$."
+
+Reading A — from the $x_{ij}$ index notation: $i$ (first index) = holder; $j$ (second index) = issuer. Arc indexed as $x_{ij}$. Source = first index = $i$ = holder. **src = holder; tgt = issuer.** This is what kcl.py implements.
+
+Reading B — from "directed edge from issuer $j$ to holder $i$": graph notation "from A to B" means src=A, tgt=B. So src = $j$ = issuer; tgt = $i$ = holder. **src = issuer; tgt = holder.** This is what 9 of 10 fetchers implement.
+
+The two readings within §1.1 directly contradict each other. Different modules of CLAIM-WEB adopted different readings:
+
+| Module | Convention adopted | Reading |
+|---|---|---|
+| `kcl.py` (Law 1) | src = holder; tgt = issuer | A ($x_{ij}$ index) |
+| `test_kcl.py` | src = holder; tgt = issuer | A |
+| `naic_schedule_s.py` | src = cedent = holder; tgt = reinsurer = issuer | A |
+| `naic_schedule_d.py` | src = issuer; tgt = holder | B (graph edge) |
+| `sec_13f.py` | src = corp issuer; tgt = AAM holder | B |
+| `sec_xbrl.py` | src = entity issuer; tgt = sector holder | B |
+| `sec_nmfp.py` | src = SPV issuer; tgt = MMF holder | B |
+| `fhlb_combined.py` | src = insurer issuer; tgt = FHLB holder | B |
+| `frb_efa_fabs.py` | src = SPV issuer; tgt = holder sector | B |
+| `z1.py` | src = issuer sector; tgt = holder sector | B |
+| `sec_adv.py` (G3) | src = AAM parent; tgt = controlled affiliate | (G3 ownership; separate question — see Phase 3c.2) |
+
+**This is a network-wide soundness defect.** When the constraint compiler joins 2024-Q4 fetcher output into a single network and runs `build_kcl_rows`, every arc emitted under Reading B will be sign-inverted at every node. A $1B Treasury holding by an insurer (per `naic_schedule_d.py`: source=`issuer:us_treasury`, target=`insurer:naic:...`) will be processed as: at the Treasury node, an outgoing arc → "Treasury holds it as asset"; at the insurer node, an incoming arc → "insurer carries it as a liability." Both are inverted: the insurer actually holds the bond as an asset and the Treasury issued it as a liability.
+
+**Why no test has caught this.** All five conservation-law property tests are *self-consistent* under one convention. They build synthetic networks using `_make_arc(src, tgt, ...)` that follow kcl.py's Reading A, then verify kcl.py satisfies the constraints under the same convention. The same is true for the fetchers' parse tests — they verify the fetcher emits arcs with the expected source/target prefixes (Reading B) but never join them to a real KCL run. The cross-module incompatibility surfaces only when a real fetcher's output is fed into `compile_constraints()` — which has never been executed end-to-end (no fetcher has run against live data; `data/raw/` is empty; the integration tests are gated by `@pytest.mark.integration`).
+
+**Phase 1 closure impact.** PHASE_GATES.md L31 requires "Conservation-law checker (`scripts/check_conservation.py`) verifies all four laws hold on the 2024-Q4 solution within published tolerances." The current code will fail this gate the moment the 2024-Q4 acquisition pipeline runs end-to-end. The remediation requires:
+
+1. **Disambiguate project plan §1.1.** Choose Reading A or Reading B as authoritative and update §1.1 prose to make the choice explicit. The audit recommends **Reading A** (src=holder; tgt=issuer) because:
+   - It is what the constraint code already implements.
+   - It is what the test suite already exercises.
+   - It is the "claim direction" convention used in most network-systemic-risk literature (Eisenberg-Noe 2001 sets up the clearing vector with the obligation network having edges from debtor to creditor of payment, but the literature is not uniform; Anand-Craig-von Peter 2015 uses asset-side rows × liability-side columns of a from-whom-to-whom matrix which is equivalent to src=holder).
+   - It is what Schedule S (the one A6-emitting fetcher) already implements.
+
+2. **Update the 9 affected fetchers** to swap source_node_id and target_node_id in their `parse()` functions. The change touches `naic_schedule_d.py`, `sec_13f.py`, `sec_xbrl.py`, `sec_nmfp.py`, `fhlb_combined.py`, `frb_efa_fabs.py`, `z1.py`, and the `validate()` prefix-check expectations.
+
+3. **Update each fetcher's unit tests** that assert source/target prefixes — these tests will need to flip the assertions.
+
+4. **Re-run the precommit gate** and verify all conservation property tests still pass.
+
+5. **Add an end-to-end test** that constructs a small toy network from fetcher fixtures, joins via compile_constraints, and verifies KCL closes — exactly the test that doesn't exist today and that would have caught this defect at the point it was introduced.
+
+This is the highest-priority Phase 1 remediation item and is reflected as Stage 3 (modified scope) in `docs/AUDIT_REMEDIATION_PLAN_v1.md`.
+
+#### Additional spot-check findings
+
+**`claimweb/__init__.py`** — sets Decimal context (`getcontext().prec = 28; getcontext().rounding = ROUND_HALF_EVEN`) per `.claude/rules/decimal-arithmetic.md`. Correct.
+
+**`claimweb/constraints/double_entry.py:114` `build_double_entry_rows`** — signature `(facts, *, period, boundary_terms)`. The function iterates `boundary_terms` and emits one `LinearConstraint` per instrument with a known total. `DIRECT_MEASURED` arcs are folded into the RHS. Spot-check confirms: the function correctly distinguishes "known" from "unknown" arcs by `data_quality_flag` and assembles a sound row. **Verdict: matches docstring.** Side note: Law 2 (instrument-level conservation) does not depend on arc-direction convention because it sums |arcs| regardless of direction — Law 2 is convention-agnostic.
+
+**`claimweb/fetchers/frb_efa_fabs.py:194 `_aggregate_to_quarters`** — aggregates daily rows to quarter-end snapshots by selecting the last available date ≤ quarter-end. The function correctly handles FABCP's quarterly-only NA pattern (CHANGELOG L416-418 documents this edge case). **Verdict: matches docstring.**
+
+**`claimweb/fetchers/sec_13f.py:309 `_find_13f_hr_for_period`** — searches the EDGAR submissions JSON for a `13F-HR` form filed within 50 days after the quarter-end. Spot-check confirms the 45-day statutory + 5-day grace logic matches CHANGELOG L59-61. **Verdict: matches docstring.**
+
+**`claimweb/fetchers/sec_xbrl.py:252 `_extract_best_fact`** — selection of the best XBRL entry for a period: primary forms over amendments; framed entries (undimensioned totals) over segment facts; latest filed wins ties. Spot-check confirms the logic matches the CHANGELOG L584-587 description. **Verdict: matches docstring.**
+
+**`claimweb/fetchers/z1.py:243 `_parse_ddp_csv`** — parses FRB DDP CSV format handling preamble rows, blank separators, NA/ND/dot missing tokens, quoted fields, and both ISO-date and `YYYY:QN` period notation. **Verdict: matches docstring.**
+
+**`claimweb/fetchers/base.py:172 `_sha256_file`** — utility for content-addressing raw-data archive per project plan §47. Standard hashlib loop. **Verdict: matches docstring.**
+
+**`claimweb/cascade/contingent.py` and `claimweb/cascade/multi_constraint.py`** — both are 16-17 LOC docstring-only stubs. References (Banerjee-Feinstein 2019, Coen-Lepore-Schaanning 2019) and planned public interfaces match the cascade-author skill. **Verdict: stubs ready for Phase 2 implementation.**
+
+### 4. Phase 4 Summary
+
+- Quantitative quality: clean. Zero TODO/FIXME, only 1 broad-catch (Schedule S CSV fallback), 2 long files (NAIC fetchers — justified).
+- Qualitative spot-checks: 8 modules match their docstrings; 1 contributes to the elevated F1 critical finding (kcl.py convention conflict with most fetchers); 2 stubs read cleanly.
+- **F1 elevated to CRITICAL severity.** Project plan §1.1 has an internal contradiction; the codebase is split between Reading A (kcl.py, test_kcl.py, naic_schedule_s) and Reading B (9 other fetchers). This is a network-wide soundness defect that has not surfaced because no end-to-end test exists.
+
+---
